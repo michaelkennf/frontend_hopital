@@ -14,7 +14,7 @@ interface LayoutProps {
   settingsPath?: string;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, title, navigationItems, settingsPath = "/admin/settings" }) => {
+const Layout: React.FC<LayoutProps> = ({ children, title: _title, navigationItems, settingsPath = "/admin/settings" }) => {
   const { logout } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();

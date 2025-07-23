@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { GlobalErrorBoundary } from '../../components/GlobalErrorBoundary';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import Settings from '../admin/Settings';
 
