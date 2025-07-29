@@ -65,59 +65,6 @@ const HistoriqueMaternite: React.FC = () => {
     fetchMaternites();
   }, []);
 
-  // Récupérer le dernier patient maternité pour pré-remplir
-  const fetchLastMaternityPatient = async () => {
-    try {
-      const response = await axios.get('/api/patients');
-      const patients = response.data.patients;
-      
-      // Chercher le dernier patient maternité (avec des champs maternité)
-      const maternityPatients = patients.filter((p: any) => p.numeroAnnuel || p.numeroMensuel);
-      
-      if (maternityPatients.length > 0) {
-        const lastPatient = maternityPatients[0]; // Le plus récent
-        
-        setFilters(f => ({
-          ...f,
-          // Champs spécifiques à la maternité seulement
-          numeroAnnuel: lastPatient.numeroAnnuel || '',
-          numeroMensuel: lastPatient.numeroMensuel || '',
-          nomPostNomPrenom: `${lastPatient.lastName} ${lastPatient.firstName}` || '',
-          age: lastPatient.age?.toString() || '',
-          adresse: lastPatient.address || '',
-          typeAccouchement: lastPatient.typeAccouchement || '',
-          jumeaux: lastPatient.jumeaux || '',
-          dateAccouchement: lastPatient.dateAccouchement ? new Date(lastPatient.dateAccouchement).toISOString().slice(0, 10) : '',
-          heureAccouchement: lastPatient.heureAccouchement || '',
-          sexeNouveauNe: lastPatient.sexeNouveauNe || '',
-          poidsGrammes: lastPatient.poidsGrammes?.toString() || '',
-          apgar1: lastPatient.apgar1 || '',
-          apgar2: lastPatient.apgar2 || '',
-          apgar3: lastPatient.apgar3 || '',
-          reanimation: lastPatient.reanimation || '',
-          atbq: lastPatient.atbq || '',
-          indicationCesarienne: lastPatient.indicationCesarienne || '',
-          cpn: lastPatient.cpn || '',
-          formuleObstetricale: lastPatient.formuleObstetricale || '',
-          ddr: lastPatient.ddr ? new Date(lastPatient.ddr).toISOString().slice(0, 10) : '',
-          saignementVaginal: lastPatient.saignementVaginal || '',
-          formuleObstetricaleG: lastPatient.formuleObstetricaleG || '',
-          formuleObstetricaleP: lastPatient.formuleObstetricaleP || '',
-          formuleObstetricaleEV: lastPatient.formuleObstetricaleEV || '',
-          formuleObstetricaleAV: lastPatient.formuleObstetricaleAV || '',
-          formuleObstetricaleMortNe: lastPatient.formuleObstetricaleMortNe || ''
-        }));
-      }
-    } catch (error: any) {
-      console.error('Erreur lors de la récupération du dernier patient maternité:', error);
-    }
-  };
-
-  // Pré-remplir avec le dernier patient maternité
-  useEffect(() => {
-    fetchLastMaternityPatient();
-  }, []);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
   };
@@ -129,26 +76,22 @@ const HistoriqueMaternite: React.FC = () => {
     setSuccess(null);
 
     try {
-      // Récupérer le dernier patient maternité pour l'associer
-      const patientsResponse = await axios.get('/api/patients');
-      const patients = patientsResponse.data.patients;
-      const maternityPatients = patients.filter((p: any) => p.numeroAnnuel || p.numeroMensuel);
-      
-      if (maternityPatients.length === 0) {
-        setError('Aucune patiente maternité trouvée pour associer l\'historique');
-        setSaving(false);
-        return;
-      }
+      // Construire la formule obstétricale comme une chaîne
+      const formuleObstetricaleComplete = [
+        filters.formuleObstetricaleG || '0',
+        filters.formuleObstetricaleP || '0',
+        filters.formuleObstetricaleEV || '0',
+        filters.formuleObstetricaleAV || '0',
+        filters.formuleObstetricaleMortNe || '0'
+      ].join(', ');
 
-      const lastPatient = maternityPatients[0];
-
-      // Créer l'historique de maternité avec les données de base du patient
+      // Créer l'historique de maternité sans association à un patient spécifique
       const historyData = {
-        patientId: lastPatient.id,
+        patientId: 1, // ID par défaut pour les historiques indépendants
         patientName: filters.nomPostNomPrenom,
         gender: 'F',
         age: filters.age ? parseInt(filters.age, 10) : 25,
-        weight: lastPatient.weight || null,
+        weight: null,
         address: filters.adresse,
         profession: '',
         maritalStatus: '',
@@ -175,14 +118,9 @@ const HistoriqueMaternite: React.FC = () => {
         atbq: filters.atbq,
         indicationCesarienne: filters.indicationCesarienne,
         cpn: filters.cpn,
-        formuleObstetricale: filters.formuleObstetricale,
+        formuleObstetricale: formuleObstetricaleComplete,
         ddr: filters.ddr || null,
-        saignementVaginal: filters.saignementVaginal,
-        formuleObstetricaleG: filters.formuleObstetricaleG ? parseInt(filters.formuleObstetricaleG, 10) : null,
-        formuleObstetricaleP: filters.formuleObstetricaleP ? parseInt(filters.formuleObstetricaleP, 10) : null,
-        formuleObstetricaleEV: filters.formuleObstetricaleEV ? parseInt(filters.formuleObstetricaleEV, 10) : null,
-        formuleObstetricaleAV: filters.formuleObstetricaleAV ? parseInt(filters.formuleObstetricaleAV, 10) : null,
-        formuleObstetricaleMortNe: filters.formuleObstetricaleMortNe ? parseInt(filters.formuleObstetricaleMortNe, 10) : null
+        saignementVaginal: filters.saignementVaginal
       };
 
       await axios.post('/api/maternity-history', historyData);
@@ -194,9 +132,6 @@ const HistoriqueMaternite: React.FC = () => {
       
       // Recharger les données
       await fetchMaternites();
-      
-      // Re-pré-remplir avec le dernier patient
-      await fetchLastMaternityPatient();
       
     } catch (error: any) {
       console.error('Erreur lors de l\'enregistrement:', error);
@@ -248,14 +183,14 @@ const HistoriqueMaternite: React.FC = () => {
                 <th className="border px-4 py-3 text-sm font-medium">FORMULE OBSTÉTRICALE</th>
                 <th className="border px-4 py-3 text-sm font-medium">DDR</th>
                 <th className="border px-4 py-3 text-sm font-medium">SAIGNEMENT VAGINAL</th>
-                <th className="border px-4 py-3 text-sm font-medium"></th>
+                <th className="border px-4 py-3 text-sm"></th>
               </tr>
               <tr>
                 <td className="border px-4 py-3">
-                  <input name="numeroAnnuel" value={filters.numeroAnnuel} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="N° annuel..." />
+                  <input name="numeroAnnuel" value={filters.numeroAnnuel} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="N° annuel..." type="number" min="0" />
                 </td>
                 <td className="border px-4 py-3">
-                  <input name="numeroMensuel" value={filters.numeroMensuel} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="N° mensuel..." />
+                  <input name="numeroMensuel" value={filters.numeroMensuel} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="N° mensuel..." type="number" min="0" />
                 </td>
                 <td className="border px-4 py-3">
                   <input name="nomPostNomPrenom" value={filters.nomPostNomPrenom} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Nom, post-nom, prénom..." />
@@ -392,7 +327,7 @@ const HistoriqueMaternite: React.FC = () => {
                     )}
                     <td className="border px-4 py-3 text-sm">{maternite.cpn || '-'}</td>
                     <td className="border px-4 py-3 text-sm">
-                      {maternite.formuleObstetricaleG || '-'}, {maternite.formuleObstetricaleP || '-'}, {maternite.formuleObstetricaleEV || '-'}, {maternite.formuleObstetricaleAV || '-'}, {maternite.formuleObstetricaleMortNe || '-'}
+                      {maternite.formuleObstetricale || '-'}
                     </td>
                     <td className="border px-4 py-3 text-sm">{maternite.ddr ? new Date(maternite.ddr).toLocaleDateString('fr-FR') : '-'}</td>
                     <td className="border px-4 py-3 text-sm">{maternite.saignementVaginal || '-'}</td>
