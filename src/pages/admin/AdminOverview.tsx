@@ -12,7 +12,7 @@ const AdminOverview: React.FC = () => {
   
   const navigate = useNavigate();
   const lastFetchRef = useRef<number>(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<any>(null);
   const mountedRef = useRef(true);
   const fetchingRef = useRef(false); // Protection contre les appels multiples
 

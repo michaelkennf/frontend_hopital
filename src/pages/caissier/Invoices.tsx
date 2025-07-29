@@ -97,10 +97,10 @@ const Invoices: React.FC = () => {
       console.log('[INVOICES] Données reçues:', data);
       
       if (res.ok) {
-        setInvoices(data.invoices || []);
+        setInvoices((data as any).invoices || []);
       } else {
         // Affichage détaillé de l'erreur
-        setError(`Erreur ${res.status} : ${data.error || res.statusText}`);
+        setError(`Erreur ${res.status} : ${(data as any).error || res.statusText}`);
       }
     } catch (e: any) {
       // Affichage détaillé de l'erreur réseau

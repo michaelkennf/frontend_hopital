@@ -8,6 +8,7 @@ import PatientsManagementMaternite from './PatientsManagementMaternite';
 import ExamsListMaternite from './ExamsListMaternite';
 import MedicationsListMaternite from './MedicationsListMaternite';
 import HistoriqueMaternite from './HistoriqueMaternite';
+import HospitalisationsMaternite from './HospitalisationsMaternite';
 
 const ROOM_TYPES = [
   'Maternité - Chambre simple',
@@ -123,167 +124,6 @@ function MaterniteOverview() {
   );
 }
 
-function Hospitalisations() {
-  const [hospitalizations, setHospitalizations] = useState<any[]>([]);
-  const [patients, setPatients] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showRoomModal, setShowRoomModal] = useState<{ open: boolean, hosp: any | null }>({ open: false, hosp: null });
-  const [showExitModal, setShowExitModal] = useState<{ open: boolean, hosp: any | null }>({ open: false, hosp: null });
-  const [roomType, setRoomType] = useState('');
-  const [exitDays, setExitDays] = useState('');
-  const [modalLoading, setModalLoading] = useState(false);
-  const [modalError, setModalError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchHospitalizations();
-  }, []);
-
-  const fetchHospitalizations = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const hospRes = await axios.get('/api/hospitalizations');
-      // Filtrer hospitalisations maternité
-      const matHosp = hospRes.data.hospitalizations.filter((h: any) => h.roomType && h.roomType.toLowerCase().includes('matern'));
-      setHospitalizations(matHosp);
-      // Charger les patientes associées
-      const patRes = await axios.get('/api/patients');
-      setPatients(patRes.data.patients || []);
-    } catch (e: any) {
-      setError(e.response?.data?.error || 'Erreur lors du chargement des hospitalisations');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleOpenRoomModal = (hosp: any) => {
-    setRoomType(hosp.roomType || '');
-    setShowRoomModal({ open: true, hosp });
-    setModalError(null);
-  };
-  const handleRoomSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!showRoomModal.hosp) return;
-    setModalLoading(true);
-    setModalError(null);
-    try {
-      await axios.patch(`/api/hospitalizations/${showRoomModal.hosp.id}`, { roomType });
-      setShowRoomModal({ open: false, hosp: null });
-      fetchHospitalizations();
-    } catch (e: any) {
-      setModalError(e.response?.data?.error || 'Erreur lors de la modification de la chambre');
-    } finally {
-      setModalLoading(false);
-    }
-  };
-
-  const handleOpenExitModal = (hosp: any) => {
-    setExitDays(hosp.days?.toString() || '');
-    setShowExitModal({ open: true, hosp });
-    setModalError(null);
-  };
-  const handleExitSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!showExitModal.hosp) return;
-    setModalLoading(true);
-    setModalError(null);
-    try {
-      await axios.patch(`/api/hospitalizations/${showExitModal.hosp.id}/exit`, { days: exitDays });
-      setShowExitModal({ open: false, hosp: null });
-      fetchHospitalizations();
-    } catch (e: any) {
-      setModalError(e.response?.data?.error || 'Erreur lors de la sortie');
-    } finally {
-      setModalLoading(false);
-    }
-  };
-
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Hospitalisations à la maternité</h1>
-      {error && <div className="mb-4 text-red-600">{error}</div>}
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Patiente</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Chambre</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Jours</th>
-              {/* Prix masqué pour l'interface maternité */}
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {hospitalizations.map((h: any) => {
-              const p = patients.find((pat: any) => pat.id === h.patientId || (h.patient && pat.id === h.patient.id));
-              return (
-                <tr key={h.id}>
-                  <td className="px-4 py-2">{p ? `${p.lastName} ${p.firstName}` : ''}</td>
-                  <td className="px-4 py-2">{h.roomType}</td>
-                  <td className="px-4 py-2">{h.days || ''}</td>
-                  {/* Prix masqué pour l'interface maternité */}
-                  <td className="px-4 py-2 flex gap-2">
-                    {h.endDate ? (
-                      <span className="text-green-600 font-semibold">Sorti</span>
-                    ) : (
-                      <button className="btn-primary btn-xs" onClick={() => handleOpenExitModal(h)}>
-                        Sortie
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      {/* Modal chambre */}
-      {showRoomModal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-            <h2 className="text-xl font-bold mb-4">Choix de la chambre</h2>
-            <form onSubmit={handleRoomSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Type de chambre</label>
-                <select value={roomType} onChange={e => setRoomType(e.target.value)} required className="input-field">
-                  <option value="">Sélectionner</option>
-                  <option value="Maternité - Chambre commune">Chambre commune</option>
-                  <option value="Maternité - Chambre privée">Chambre privée</option>
-                </select>
-              </div>
-              {modalError && <div className="text-red-600 text-sm mt-2">{modalError}</div>}
-              <div className="flex justify-end gap-2">
-                <button type="button" className="btn-secondary" onClick={() => setShowRoomModal({ open: false, hosp: null })}>Annuler</button>
-                <button type="submit" className="btn-primary" disabled={modalLoading}>{modalLoading ? 'Enregistrement...' : 'Valider'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      {/* Modal sortie */}
-      {showExitModal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-            <h2 className="text-xl font-bold mb-4">Sortie de la maternité</h2>
-            <form onSubmit={handleExitSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Nombre de jours passés</label>
-                <input type="number" min="1" value={exitDays} onChange={e => setExitDays(e.target.value)} required className="input-field" />
-              </div>
-              {modalError && <div className="text-red-600 text-sm mt-2">{modalError}</div>}
-              <div className="flex justify-end gap-2">
-                <button type="button" className="btn-secondary" onClick={() => setShowExitModal({ open: false, hosp: null })}>Annuler</button>
-                <button type="submit" className="btn-primary" disabled={modalLoading}>{modalLoading ? 'Enregistrement...' : 'Valider'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function calculateAge(dateNaissance: string) {
   if (!dateNaissance) return '';
   const birth = new Date(dateNaissance);
@@ -328,6 +168,15 @@ const MaterniteDashboard: React.FC = () => {
       )
     },
     {
+      name: 'Hospitalisations',
+      href: '/maternite/hospitalisations',
+      icon: (
+        <svg className="mr-3 h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      )
+    },
+    {
       name: 'Historique',
       href: '/maternite/historique',
       icon: (
@@ -346,7 +195,7 @@ const MaterniteDashboard: React.FC = () => {
           <Route path="/patients" element={<PatientsManagementMaternite />} />
           <Route path="/exams" element={<ExamsListMaternite />} />
           <Route path="/medications" element={<MedicationsListMaternite />} />
-          <Route path="/hospitalisations" element={<Hospitalisations />} />
+          <Route path="/hospitalisations" element={<HospitalisationsMaternite />} />
           <Route path="/historique" element={<HistoriqueMaternite />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>

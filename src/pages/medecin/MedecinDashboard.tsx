@@ -460,9 +460,9 @@ function PatientsDossiers() {
           </div>
         </div>
           {/* Dossier de patient sélectionné */}
-          {selectedPatient && dossier ? (
+      {selectedPatient && dossier ? (
             <div className="lg:col-span-2">
-              <h2 className="font-semibold text-lg mb-2">Dossier de {selectedPatient.lastName} {selectedPatient.firstName}</h2>
+          <h2 className="font-semibold text-lg mb-2">Dossier de {selectedPatient.lastName} {selectedPatient.firstName}</h2>
               
               {/* Informations du patient */}
               <div className="mb-6 p-4 bg-gray-50 rounded border">
