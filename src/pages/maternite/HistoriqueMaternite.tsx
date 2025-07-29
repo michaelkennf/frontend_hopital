@@ -224,138 +224,138 @@ const HistoriqueMaternite: React.FC = () => {
       
       <div className="overflow-x-auto">
         <form onSubmit={handleSave}>
-          <table className="min-w-full border border-gray-300 text-xs">
+          <table className="min-w-full border border-gray-300 text-sm">
             <thead>
               <tr className="bg-gray-100">
-                <th className="border px-2 py-2">N° ANN</th>
-                <th className="border px-2 py-2">N° MENS</th>
-                <th className="border px-2 py-2">NOM, POST-NOM, PRÉNOM</th>
-                <th className="border px-2 py-2">AGE</th>
-                <th className="border px-2 py-2">ADRESSE</th>
-                <th className="border px-2 py-2">TYPE ACC</th>
-                <th className="border px-2 py-2">JUMEAUX</th>
-                <th className="border px-2 py-2">DATE</th>
-                <th className="border px-2 py-2">HEURE</th>
-                <th className="border px-2 py-2">SEXE N-NÉ</th>
-                <th className="border px-2 py-2">POIDS EN GRAMME</th>
-                <th className="border px-2 py-2">APGAR</th>
-                <th className="border px-2 py-2">RÉANIMATION</th>
-                <th className="border px-2 py-2">ATBQ</th>
+                <th className="border px-4 py-3 text-sm font-medium">N° ANN</th>
+                <th className="border px-4 py-3 text-sm font-medium">N° MENS</th>
+                <th className="border px-4 py-3 text-sm font-medium">NOM, POST-NOM, PRÉNOM</th>
+                <th className="border px-4 py-3 text-sm font-medium">AGE</th>
+                <th className="border px-4 py-3 text-sm font-medium">ADRESSE</th>
+                <th className="border px-4 py-3 text-sm font-medium">TYPE ACC</th>
+                <th className="border px-4 py-3 text-sm font-medium">JUMEAUX</th>
+                <th className="border px-4 py-3 text-sm font-medium">DATE</th>
+                <th className="border px-4 py-3 text-sm font-medium">HEURE</th>
+                <th className="border px-4 py-3 text-sm font-medium">SEXE N-NÉ</th>
+                <th className="border px-4 py-3 text-sm font-medium">POIDS EN GRAMME</th>
+                <th className="border px-4 py-3 text-sm font-medium">APGAR</th>
+                <th className="border px-4 py-3 text-sm font-medium">RÉANIMATION</th>
+                <th className="border px-4 py-3 text-sm font-medium">ATBQ</th>
                 {shouldShowCesarienneColumn() && (
-                  <th className="border px-2 py-2">INDIC SI CÉSAR</th>
+                  <th className="border px-4 py-3 text-sm font-medium">INDIC SI CÉSAR</th>
                 )}
-                <th className="border px-2 py-2">CPN</th>
-                <th className="border px-2 py-2">FORMULE OBSTÉTRICALE</th>
-                <th className="border px-2 py-2">DDR</th>
-                <th className="border px-2 py-2">SAIGNEMENT VAGINAL</th>
-                <th className="border px-2 py-2"></th>
+                <th className="border px-4 py-3 text-sm font-medium">CPN</th>
+                <th className="border px-4 py-3 text-sm font-medium">FORMULE OBSTÉTRICALE</th>
+                <th className="border px-4 py-3 text-sm font-medium">DDR</th>
+                <th className="border px-4 py-3 text-sm font-medium">SAIGNEMENT VAGINAL</th>
+                <th className="border px-4 py-3 text-sm font-medium"></th>
               </tr>
               <tr>
-                <td className="border px-2 py-2">
-                  <input name="numeroAnnuel" value={filters.numeroAnnuel} onChange={handleChange} className="input-field w-full text-xs" placeholder="N° annuel..." />
+                <td className="border px-4 py-3">
+                  <input name="numeroAnnuel" value={filters.numeroAnnuel} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="N° annuel..." />
                 </td>
-                <td className="border px-2 py-2">
-                  <input name="numeroMensuel" value={filters.numeroMensuel} onChange={handleChange} className="input-field w-full text-xs" placeholder="N° mensuel..." />
+                <td className="border px-4 py-3">
+                  <input name="numeroMensuel" value={filters.numeroMensuel} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="N° mensuel..." />
                 </td>
-                <td className="border px-2 py-2">
-                  <input name="nomPostNomPrenom" value={filters.nomPostNomPrenom} onChange={handleChange} className="input-field w-full text-xs" placeholder="Nom, post-nom, prénom..." />
+                <td className="border px-4 py-3">
+                  <input name="nomPostNomPrenom" value={filters.nomPostNomPrenom} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Nom, post-nom, prénom..." />
                 </td>
-                <td className="border px-2 py-2">
-                  <input name="age" value={filters.age} onChange={handleChange} className="input-field w-full text-xs" placeholder="Age..." type="number" min="0" />
+                <td className="border px-4 py-3">
+                  <input name="age" value={filters.age} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Age..." type="number" min="0" />
                 </td>
-                <td className="border px-2 py-2">
-                  <input name="adresse" value={filters.adresse} onChange={handleChange} className="input-field w-full text-xs" placeholder="Adresse..." />
+                <td className="border px-4 py-3">
+                  <input name="adresse" value={filters.adresse} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Adresse..." />
                 </td>
-                <td className="border px-2 py-2">
-                  <select name="typeAccouchement" value={filters.typeAccouchement} onChange={handleChange} className="input-field w-full text-xs">
+                <td className="border px-4 py-3">
+                  <select name="typeAccouchement" value={filters.typeAccouchement} onChange={handleChange} className="input-field w-full text-sm p-2">
                     <option value="">Sélectionner</option>
                     <option value="Accouchement normal">Accouchement normal</option>
                     <option value="Accouchement avec césarienne">Accouchement avec césarienne</option>
                   </select>
                 </td>
-                <td className="border px-2 py-2">
-                  <select name="jumeaux" value={filters.jumeaux} onChange={handleChange} className="input-field w-full text-xs">
+                <td className="border px-4 py-3">
+                  <select name="jumeaux" value={filters.jumeaux} onChange={handleChange} className="input-field w-full text-sm p-2">
                     <option value="">Sélectionner</option>
                     <option value="Oui">Oui</option>
                     <option value="Non">Non</option>
                   </select>
                 </td>
-                <td className="border px-2 py-2">
-                  <input name="dateAccouchement" value={filters.dateAccouchement} onChange={handleChange} className="input-field w-full text-xs" type="date" />
+                <td className="border px-4 py-3">
+                  <input name="dateAccouchement" value={filters.dateAccouchement} onChange={handleChange} className="input-field w-full text-sm p-2" type="date" />
                 </td>
-                <td className="border px-2 py-2">
-                  <input name="heureAccouchement" value={filters.heureAccouchement} onChange={handleChange} className="input-field w-full text-xs" type="time" />
+                <td className="border px-4 py-3">
+                  <input name="heureAccouchement" value={filters.heureAccouchement} onChange={handleChange} className="input-field w-full text-sm p-2" type="time" />
                 </td>
-                <td className="border px-2 py-2">
-                  <select name="sexeNouveauNe" value={filters.sexeNouveauNe} onChange={handleChange} className="input-field w-full text-xs">
+                <td className="border px-4 py-3">
+                  <select name="sexeNouveauNe" value={filters.sexeNouveauNe} onChange={handleChange} className="input-field w-full text-sm p-2">
                     <option value="">Sélectionner</option>
                     <option value="M">M</option>
                     <option value="F">F</option>
                   </select>
                 </td>
-                <td className="border px-2 py-2">
-                  <input name="poidsGrammes" value={filters.poidsGrammes} onChange={handleChange} className="input-field w-full text-xs" placeholder="Poids (g)..." type="number" min="0" />
+                <td className="border px-4 py-3">
+                  <input name="poidsGrammes" value={filters.poidsGrammes} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Poids (g)..." type="number" min="0" />
                 </td>
-                <td className="border px-2 py-2">
-                  <div className="flex items-center space-x-1">
-                    <input name="apgar1" value={filters.apgar1} onChange={handleChange} className="input-field w-10 text-xs text-center" placeholder="1" type="number" min="0" max="10" />
-                    <span className="text-gray-500">/</span>
-                    <input name="apgar2" value={filters.apgar2} onChange={handleChange} className="input-field w-10 text-xs text-center" placeholder="2" type="number" min="0" max="10" />
-                    <span className="text-gray-500">/</span>
-                    <input name="apgar3" value={filters.apgar3} onChange={handleChange} className="input-field w-10 text-xs text-center" placeholder="3" type="number" min="0" max="10" />
+                <td className="border px-4 py-3">
+                  <div className="flex items-center space-x-2">
+                    <input name="apgar1" value={filters.apgar1} onChange={handleChange} className="input-field w-12 text-sm text-center p-2" placeholder="1" type="number" min="0" max="10" />
+                    <span className="text-gray-500 font-medium">/</span>
+                    <input name="apgar2" value={filters.apgar2} onChange={handleChange} className="input-field w-12 text-sm text-center p-2" placeholder="2" type="number" min="0" max="10" />
+                    <span className="text-gray-500 font-medium">/</span>
+                    <input name="apgar3" value={filters.apgar3} onChange={handleChange} className="input-field w-12 text-sm text-center p-2" placeholder="3" type="number" min="0" max="10" />
                   </div>
                 </td>
-                <td className="border px-2 py-2">
-                  <select name="reanimation" value={filters.reanimation} onChange={handleChange} className="input-field w-full text-xs">
+                <td className="border px-4 py-3">
+                  <select name="reanimation" value={filters.reanimation} onChange={handleChange} className="input-field w-full text-sm p-2">
                     <option value="">Sélectionner</option>
                     <option value="Oui">Oui</option>
                     <option value="Non">Non</option>
                   </select>
                 </td>
-                <td className="border px-2 py-2">
-                  <select name="atbq" value={filters.atbq} onChange={handleChange} className="input-field w-full text-xs">
+                <td className="border px-4 py-3">
+                  <select name="atbq" value={filters.atbq} onChange={handleChange} className="input-field w-full text-sm p-2">
                     <option value="">Sélectionner</option>
                     <option value="Oui">Oui</option>
                     <option value="Non">Non</option>
                   </select>
                 </td>
                 {shouldShowCesarienneColumn() && (
-                  <td className="border px-2 py-2">
-                    <input name="indicationCesarienne" value={filters.indicationCesarienne} onChange={handleChange} className="input-field w-full text-xs" placeholder="Indication césarienne..." />
+                  <td className="border px-4 py-3">
+                    <input name="indicationCesarienne" value={filters.indicationCesarienne} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Indication césarienne..." />
                   </td>
                 )}
-                <td className="border px-2 py-2">
-                  <select name="cpn" value={filters.cpn} onChange={handleChange} className="input-field w-full text-xs">
+                <td className="border px-4 py-3">
+                  <select name="cpn" value={filters.cpn} onChange={handleChange} className="input-field w-full text-sm p-2">
                     <option value="">Sélectionner</option>
                     <option value="Oui">Oui</option>
                     <option value="Non">Non</option>
                   </select>
                 </td>
-                <td className="border px-2 py-2">
-                  <div className="flex items-center space-x-1">
-                    <input name="formuleObstetricaleG" value={filters.formuleObstetricaleG} onChange={handleChange} className="input-field w-8 text-xs text-center" placeholder="G" type="number" min="0" />
-                    <span className="text-gray-500">,</span>
-                    <input name="formuleObstetricaleP" value={filters.formuleObstetricaleP} onChange={handleChange} className="input-field w-8 text-xs text-center" placeholder="P" type="number" min="0" />
-                    <span className="text-gray-500">,</span>
-                    <input name="formuleObstetricaleEV" value={filters.formuleObstetricaleEV} onChange={handleChange} className="input-field w-8 text-xs text-center" placeholder="EV" type="number" min="0" />
-                    <span className="text-gray-500">,</span>
-                    <input name="formuleObstetricaleAV" value={filters.formuleObstetricaleAV} onChange={handleChange} className="input-field w-8 text-xs text-center" placeholder="AV" type="number" min="0" />
-                    <span className="text-gray-500">,</span>
-                    <input name="formuleObstetricaleMortNe" value={filters.formuleObstetricaleMortNe} onChange={handleChange} className="input-field w-8 text-xs text-center" placeholder="Mort-né" type="number" min="0" />
+                <td className="border px-4 py-3">
+                  <div className="flex items-center space-x-2">
+                    <input name="formuleObstetricaleG" value={filters.formuleObstetricaleG} onChange={handleChange} className="input-field w-10 text-sm text-center p-2" placeholder="G" type="number" min="0" />
+                    <span className="text-gray-500 font-medium">,</span>
+                    <input name="formuleObstetricaleP" value={filters.formuleObstetricaleP} onChange={handleChange} className="input-field w-10 text-sm text-center p-2" placeholder="P" type="number" min="0" />
+                    <span className="text-gray-500 font-medium">,</span>
+                    <input name="formuleObstetricaleEV" value={filters.formuleObstetricaleEV} onChange={handleChange} className="input-field w-10 text-sm text-center p-2" placeholder="EV" type="number" min="0" />
+                    <span className="text-gray-500 font-medium">,</span>
+                    <input name="formuleObstetricaleAV" value={filters.formuleObstetricaleAV} onChange={handleChange} className="input-field w-10 text-sm text-center p-2" placeholder="AV" type="number" min="0" />
+                    <span className="text-gray-500 font-medium">,</span>
+                    <input name="formuleObstetricaleMortNe" value={filters.formuleObstetricaleMortNe} onChange={handleChange} className="input-field w-10 text-sm text-center p-2" placeholder="Mort-né" type="number" min="0" />
                   </div>
                 </td>
-                <td className="border px-2 py-2">
-                  <input name="ddr" value={filters.ddr} onChange={handleChange} className="input-field w-full text-xs" type="date" />
+                <td className="border px-4 py-3">
+                  <input name="ddr" value={filters.ddr} onChange={handleChange} className="input-field w-full text-sm p-2" type="date" />
                 </td>
-                <td className="border px-2 py-2">
-                  <select name="saignementVaginal" value={filters.saignementVaginal} onChange={handleChange} className="input-field w-full text-xs">
+                <td className="border px-4 py-3">
+                  <select name="saignementVaginal" value={filters.saignementVaginal} onChange={handleChange} className="input-field w-full text-sm p-2">
                     <option value="">Sélectionner</option>
                     <option value="Oui">Oui</option>
                     <option value="Non">Non</option>
                   </select>
                 </td>
-                <td className="border px-2 py-2 text-center">
-                  <button type="submit" className="btn-primary text-xs" disabled={saving}>
+                <td className="border px-4 py-3 text-center">
+                  <button type="submit" className="btn-primary text-sm px-4 py-2" disabled={saving}>
                     {saving ? 'Enregistrement...' : 'Enregistrer'}
                   </button>
                 </td>
@@ -373,30 +373,30 @@ const HistoriqueMaternite: React.FC = () => {
               ) : (
                 maternites.map((maternite) => (
                   <tr key={maternite.id}>
-                    <td className="border px-2 py-2">{maternite.numeroAnnuel || '-'}</td>
-                    <td className="border px-2 py-2">{maternite.numeroMensuel || '-'}</td>
-                    <td className="border px-2 py-2">{maternite.patientName || '-'}</td>
-                    <td className="border px-2 py-2">{maternite.age || '-'}</td>
-                    <td className="border px-2 py-2">{maternite.address || '-'}</td>
-                    <td className="border px-2 py-2">{maternite.typeAccouchement || '-'}</td>
-                    <td className="border px-2 py-2">{maternite.jumeaux || '-'}</td>
-                    <td className="border px-2 py-2">{maternite.dateAccouchement ? new Date(maternite.dateAccouchement).toLocaleDateString('fr-FR') : '-'}</td>
-                    <td className="border px-2 py-2">{maternite.heureAccouchement || '-'}</td>
-                    <td className="border px-2 py-2">{maternite.sexeNouveauNe || '-'}</td>
-                    <td className="border px-2 py-2">{maternite.poidsGrammes || '-'}</td>
-                    <td className="border px-2 py-2">{maternite.apgar1 || '-'} / {maternite.apgar2 || '-'} / {maternite.apgar3 || '-'}</td>
-                    <td className="border px-2 py-2">{maternite.reanimation || '-'}</td>
-                    <td className="border px-2 py-2">{maternite.atbq || '-'}</td>
+                    <td className="border px-4 py-3 text-sm">{maternite.numeroAnnuel || '-'}</td>
+                    <td className="border px-4 py-3 text-sm">{maternite.numeroMensuel || '-'}</td>
+                    <td className="border px-4 py-3 text-sm">{maternite.patientName || '-'}</td>
+                    <td className="border px-4 py-3 text-sm">{maternite.age || '-'}</td>
+                    <td className="border px-4 py-3 text-sm">{maternite.address || '-'}</td>
+                    <td className="border px-4 py-3 text-sm">{maternite.typeAccouchement || '-'}</td>
+                    <td className="border px-4 py-3 text-sm">{maternite.jumeaux || '-'}</td>
+                    <td className="border px-4 py-3 text-sm">{maternite.dateAccouchement ? new Date(maternite.dateAccouchement).toLocaleDateString('fr-FR') : '-'}</td>
+                    <td className="border px-4 py-3 text-sm">{maternite.heureAccouchement || '-'}</td>
+                    <td className="border px-4 py-3 text-sm">{maternite.sexeNouveauNe || '-'}</td>
+                    <td className="border px-4 py-3 text-sm">{maternite.poidsGrammes || '-'}</td>
+                    <td className="border px-4 py-3 text-sm">{maternite.apgar1 || '-'} / {maternite.apgar2 || '-'} / {maternite.apgar3 || '-'}</td>
+                    <td className="border px-4 py-3 text-sm">{maternite.reanimation || '-'}</td>
+                    <td className="border px-4 py-3 text-sm">{maternite.atbq || '-'}</td>
                     {shouldShowCesarienneColumn() && (
-                      <td className="border px-2 py-2">{maternite.indicationCesarienne || '-'}</td>
+                      <td className="border px-4 py-3 text-sm">{maternite.indicationCesarienne || '-'}</td>
                     )}
-                    <td className="border px-2 py-2">{maternite.cpn || '-'}</td>
-                    <td className="border px-2 py-2">
+                    <td className="border px-4 py-3 text-sm">{maternite.cpn || '-'}</td>
+                    <td className="border px-4 py-3 text-sm">
                       {maternite.formuleObstetricaleG || '-'}, {maternite.formuleObstetricaleP || '-'}, {maternite.formuleObstetricaleEV || '-'}, {maternite.formuleObstetricaleAV || '-'}, {maternite.formuleObstetricaleMortNe || '-'}
                     </td>
-                    <td className="border px-2 py-2">{maternite.ddr ? new Date(maternite.ddr).toLocaleDateString('fr-FR') : '-'}</td>
-                    <td className="border px-2 py-2">{maternite.saignementVaginal || '-'}</td>
-                    <td className="border px-2 py-2"></td>
+                    <td className="border px-4 py-3 text-sm">{maternite.ddr ? new Date(maternite.ddr).toLocaleDateString('fr-FR') : '-'}</td>
+                    <td className="border px-4 py-3 text-sm">{maternite.saignementVaginal || '-'}</td>
+                    <td className="border px-4 py-3 text-sm"></td>
                   </tr>
                 ))
               )}
