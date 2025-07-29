@@ -30,31 +30,63 @@ const FinancialDashboard: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // Invoices (entrées)
+      console.log('[FINANCIAL] Début de la récupération des données financières');
+      
+      // Invoices (entrées) - récupérer toutes les factures payées ou imprimées
       const invRes = await axios.get('/api/invoices');
       const invoices = invRes.data.invoices || [];
+      console.log('[FINANCIAL] Factures récupérées:', invoices.length);
+      
       // Supply Requests (sorties)
       const reqRes = await axios.get('/api/supply-requests');
       const supplyRequests = reqRes.data.requests || [];
+      console.log('[FINANCIAL] Demandes d\'approvisionnement récupérées:', supplyRequests.length);
+      
       // Préparer les datasets par mois
       const now = new Date();
       const year = now.getFullYear();
       const getMonth = (date: string) => new Date(date).getMonth();
+      
       // Entrées par type
       const types = ['consultation', 'exam', 'medication', 'hospitalization'];
       const incomeByType: Record<string, number[]> = {};
       types.forEach(type => { incomeByType[type] = Array(12).fill(0); });
-      invoices.filter((i: any) => i.status === 'paid' && i.createdAt && new Date(i.createdAt).getFullYear() === year)
-        .forEach((i: any) => {
-          const m = getMonth(i.createdAt);
-          if (i.items && Array.isArray(i.items)) {
-            i.items.forEach((item: any) => {
-              if (types.includes(item.type)) {
-                incomeByType[item.type][m] += item.totalPrice || 0;
-              }
-            });
-          }
+      
+      // Filtrer les factures payées ou imprimées
+      const validInvoices = invoices.filter((i: any) => 
+        (i.status === 'paid' || i.printed === true) && 
+        i.createdAt && 
+        new Date(i.createdAt).getFullYear() === year
+      );
+      
+      console.log('[FINANCIAL] Factures valides (payées/imprimées):', validInvoices.length);
+      
+      validInvoices.forEach((i: any) => {
+        const m = getMonth(i.createdAt);
+        console.log(`[FINANCIAL] Traitement facture ${i.id}:`, {
+          status: i.status,
+          printed: i.printed,
+          totalAmount: i.totalAmount,
+          itemsCount: i.items?.length || 0
         });
+        
+        if (i.items && Array.isArray(i.items)) {
+          i.items.forEach((item: any) => {
+            console.log(`[FINANCIAL] Item:`, {
+              type: item.type,
+              totalPrice: item.totalPrice,
+              description: item.description
+            });
+            
+            if (types.includes(item.type)) {
+              incomeByType[item.type][m] += item.totalPrice || 0;
+            }
+          });
+        }
+      });
+      
+      console.log('[FINANCIAL] Revenus par type calculés:', incomeByType);
+      
       // Sorties (approvisionnements approuvés)
       const expenses = Array(12).fill(0);
       supplyRequests.filter((r: any) => r.status === 'approved' && r.date && new Date(r.date).getFullYear() === year)
@@ -62,6 +94,9 @@ const FinancialDashboard: React.FC = () => {
           const m = getMonth(r.date);
           expenses[m] += r.totalAmount || 0;
         });
+      
+      console.log('[FINANCIAL] Dépenses calculées:', expenses);
+      
       // Préparer les datasets Chart.js
       setIncomeData({
         labels: months,
@@ -100,7 +135,7 @@ const FinancialDashboard: React.FC = () => {
       });
       // Détails des entrées
       const incomeRows: any[] = [];
-      invoices.filter((i: any) => i.status === 'paid').forEach((i: any) => {
+      invoices.filter((i: any) => i.status === 'paid' || i.printed === true).forEach((i: any) => {
         if (i.items && Array.isArray(i.items)) {
           i.items.forEach((item: any) => {
             incomeRows.push({

@@ -178,7 +178,7 @@ const MedicationsListMaternite: React.FC = () => {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Médicament</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Quantité</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                  {/* Prix masqué pour l'interface maternité */}
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                 </tr>
               </thead>
@@ -191,7 +191,7 @@ const MedicationsListMaternite: React.FC = () => {
                     <td className="px-4 py-2">{s.medication.name}</td>
                     <td className="px-4 py-2">{s.quantity}</td>
                     <td className="px-4 py-2">{new Date(s.date).toLocaleDateString('fr-FR')}</td>
-                    <td className="px-4 py-2">{s.total} $</td>
+                    {/* Prix masqué pour l'interface maternité */}
                     <td className="px-4 py-2">
                       <button className="btn-secondary btn-xs" onClick={() => handleEdit(s)}>Modifier</button>
                     </td>

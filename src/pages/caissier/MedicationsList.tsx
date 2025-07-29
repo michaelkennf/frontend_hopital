@@ -230,36 +230,49 @@ const MedicationsList: React.FC = () => {
     } catch (e) {
       // ignore
     }
-    const win = window.open('', '', 'height=900,width=700');
+    const win = window.open('', '', 'width=350,height=700');
     if (win) {
       win.document.write('<html><head><title>Facture médicament</title>');
-      win.document.write('<style>body{font-family:sans-serif;} .facture{max-width:500px;margin:0 auto;} .facture-header{color:#15803d;text-align:center;margin-bottom:16px;} .facture-table{width:100%;border-collapse:collapse;} .facture-table th,.facture-table td{border:1px solid #ccc;padding:8px;} .footer{font-size:13px;text-align:center;margin-top:40px;color:#222;} .entete-bg{background: linear-gradient(90deg, #fff 70%, #009900 100%); border-bottom: 2px solid #e60000; border-radius: 0 0 80px 0 / 0 0 40px 0;} .entete-content{display:flex;align-items:center;gap:16px;} .entete-logo{height:70px;} .entete-text{flex:1;text-align:center;} .entete-title{color:#009900;font-weight:bold;font-size:1.2em;} .entete-sub{color:#e60000;font-weight:bold;} @media print{.no-print{display:none;}}</style>');
+      win.document.write(`
+        <style>
+          @media print {
+            body { width: 80mm !important; margin: 0; }
+          }
+          body { font-family: monospace, Arial, sans-serif; font-size: 10px; width: 80mm; margin: 0; }
+          .facture { width: 80mm; margin: 0 auto; }
+          .facture-header { text-align: center; font-size: 12px; font-weight: bold; margin-bottom: 4px; }
+          .facture-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+          .facture-table th, .facture-table td { border-bottom: 1px dashed #ccc; padding: 2px 0; text-align: left; }
+          .footer { font-size: 9px; text-align: center; margin-top: 10px; color: #222; }
+          .entete-logo { height: 30px; margin-bottom: 2px; }
+          .entete-title { color: #009900; font-weight: bold; font-size: 11px; }
+          .entete-sub { color: #e60000; font-weight: bold; font-size: 10px; }
+        </style>
+      `);
       win.document.write('</head><body>');
       // Entête institutionnelle
-      win.document.write('<div class="entete-bg" style="padding:12px 12px 0 12px;">');
-      win.document.write('<div class="entete-content">');
-      win.document.write('<img src="/logo_polycliniques.jpg" class="entete-logo" alt="Logo" />');
-      win.document.write('<div class="entete-text">');
-      win.document.write('<div style="font-size:13px;font-weight:bold;">REPUBLIQUE DEMOCRATIQUE DU CONGO<br/>PROVINCE DU SUD-KIVU<br/>VILLE DE BUKAVU<br/>ZONE DE SANTE URBAINE DE KADUTU</div>');
+      win.document.write('<div style="text-align:center;">');
+      win.document.write('<img src="/logo_polycliniques.jpg" class="entete-logo" alt="Logo" /><br/>');
+      win.document.write('<div style="font-size:9px;font-weight:bold;">REPUBLIQUE DEMOCRATIQUE DU CONGO<br/>PROVINCE DU SUD-KIVU<br/>VILLE DE BUKAVU<br/>ZONE DE SANTE URBAINE DE KADUTU</div>');
       win.document.write('<div class="entete-sub">FONDATION UMOJA</div>');
-      win.document.write('<div style="font-size:15px;font-weight:bold;color:#009900;">"F.U" asbl</div>');
-      win.document.write('<div style="font-size:13px;font-weight:bold;">DEPARTEMENT DES OEUVRES MEDICALES</div>');
+      win.document.write('<div style="font-size:10px;font-weight:bold;color:#009900;">"F.U" asbl</div>');
+      win.document.write('<div style="font-size:9px;font-weight:bold;">DEPARTEMENT DES OEUVRES MEDICALES</div>');
       win.document.write('<div class="entete-title">POLYCLINIQUE DES APOTRES</div>');
-      win.document.write('</div></div></div>');
+      win.document.write('</div>');
       // Facture
       win.document.write('<div class="facture">');
-      win.document.write('<h2 class="facture-header">Facture médicament</h2>');
+      win.document.write('<div class="facture-header">FACTURE MÉDICAMENT</div>');
       win.document.write('<table class="facture-table"><tbody>');
-      win.document.write(`<tr><th>Patient</th><td>${sale.patient.folderNumber}</td></tr>`);
-      win.document.write(`<tr><th>Médicament</th><td>${sale.medication.name}</td></tr>`);
-      win.document.write(`<tr><th>Quantité</th><td>${sale.quantity}</td></tr>`);
-      win.document.write(`<tr><th>Date</th><td>${new Date(sale.date).toLocaleDateString('fr-FR')}</td></tr>`);
-      win.document.write(`<tr><th>Prix unitaire</th><td>${sale.medication.price} $</td></tr>`);
-      win.document.write(`<tr><th>Total</th><td>${sale.total} $</td></tr>`);
+      win.document.write(`<tr><td><b>Patient</b></td><td>${sale.patient.folderNumber}</td></tr>`);
+      win.document.write(`<tr><td><b>Médicament</b></td><td>${sale.medication.name}</td></tr>`);
+      win.document.write(`<tr><td><b>Quantité</b></td><td>${sale.quantity}</td></tr>`);
+      win.document.write(`<tr><td><b>Date</b></td><td>${new Date(sale.date).toLocaleDateString('fr-FR')}</td></tr>`);
+      win.document.write(`<tr><td><b>Prix unitaire</b></td><td>${sale.medication.price} $</td></tr>`);
+      win.document.write(`<tr><td><b>Total</b></td><td>${sale.total} $</td></tr>`);
       win.document.write('</tbody></table>');
       win.document.write('</div>');
       // Bas de page institutionnel
-      win.document.write('<div class="footer" style="text-align:center;">');
+      win.document.write('<div class="footer">');
       win.document.write('Adresse : DRCONGO/SK/BKV/Av. BUHOZI/KAJANGU/CIRIRI<br/>');
       win.document.write('Tél : (+243) 975 822 376, 843 066 779<br/>');
       win.document.write('Email : polycliniquedesapotres1121@gmail.com');

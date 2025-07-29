@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const ROOM_TYPES = [
-  { label: 'Chambre commune (1$ / jour)', value: 'Maternité - Chambre commune', price: 1 },
-  { label: 'Chambre privée (5$ / jour)', value: 'Maternité - Chambre privée', price: 5 },
-];
-
 function calculateAge(dateNaissance: string) {
   if (!dateNaissance) return '';
   const birth = new Date(dateNaissance);
@@ -29,7 +24,6 @@ const PatientsManagementMaternite: React.FC = () => {
     poids: '',
     adresse: '',
     telephone: '',
-    roomType: '',
   });
   const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,7 +35,6 @@ const PatientsManagementMaternite: React.FC = () => {
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [editSuccess, setEditSuccess] = useState<string | null>(null);
-  const [roomTypeSearch, setRoomTypeSearch] = useState('');
 
   useEffect(() => {
     fetchPatients();
@@ -51,14 +44,14 @@ const PatientsManagementMaternite: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // On récupère toutes les hospitalisations maternité pour filtrer les patientes
+      // On récupère toutes les hospitalisations maternité pour filtrer les patients
       const hospRes = await axios.get('/api/hospitalizations');
-      const matHosp = hospRes.data.hospitalizations.filter((h: any) => h.roomType && h.roomType.toLowerCase().includes('matern'));
-      const matPatientIds = matHosp.map((h: any) => h.patientId);
+      const hospMaternite = hospRes.data.hospitalizations.filter((h: any) => h.roomType && h.roomType.toLowerCase().includes('maternité'));
+      const hospPatientIds = hospMaternite.map((h: any) => h.patientId);
       const patRes = await axios.get('/api/patients');
-      setPatients((patRes.data.patients || []).filter((p: any) => matPatientIds.includes(p.id)));
+      setPatients((patRes.data.patients || []).filter((p: any) => hospPatientIds.includes(p.id)));
     } catch (e: any) {
-      setError(e.response?.data?.error || 'Erreur lors du chargement des patientes');
+      setError(e.response?.data?.error || 'Erreur lors du chargement des patients maternité');
     } finally {
       setLoading(false);
     }
@@ -66,7 +59,7 @@ const PatientsManagementMaternite: React.FC = () => {
 
   const handleOpenForm = () => {
     setForm({
-      firstName: '', lastName: '', sexe: '', dateNaissance: '', age: '', poids: '', adresse: '', telephone: '', roomType: ''
+      firstName: '', lastName: '', sexe: '', dateNaissance: '', age: '', poids: '', adresse: '', telephone: ''
     });
     setShowForm(true);
     setError(null);
@@ -88,7 +81,7 @@ const PatientsManagementMaternite: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      // 1. Créer la patiente
+      // 1. Créer le patient
       const patientRes = await axios.post('/api/patients', {
         firstName: form.firstName,
         lastName: form.lastName,
@@ -99,18 +92,18 @@ const PatientsManagementMaternite: React.FC = () => {
         telephone: form.telephone,
       });
       const patientId = patientRes.data.patient?.id || patientRes.data.id;
-      // 2. Hospitaliser immédiatement à la maternité
+      // 2. Hospitaliser immédiatement en maternité
       await axios.post('/api/hospitalizations', {
         patientId,
-        roomType: form.roomType,
+        roomType: 'Maternité',
         days: 1, // Par défaut 1 jour, sera mis à jour à la sortie
-        price: ROOM_TYPES.find(r => r.value === form.roomType)?.price || 1,
+        price: 1, // Prix par défaut pour maternité
       });
-      setSuccess('Patiente hospitalisée à la maternité avec succès !');
+      setSuccess('Patient maternité enregistré avec succès !');
       setShowForm(false);
       fetchPatients();
     } catch (e: any) {
-      setError(e.response?.data?.error || 'Erreur lors de l’enregistrement de la patiente');
+      setError(e.response?.data?.error || 'Erreur lors de l\'enregistrement du patient');
     } finally {
       setLoading(false);
     }
@@ -124,26 +117,26 @@ const PatientsManagementMaternite: React.FC = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Gestion des patientes hospitalisées à la maternité</h1>
+        <h1 className="text-2xl font-bold">Gestion des patients maternité</h1>
         <button className="btn-primary" onClick={handleOpenForm}>
-          + Nouvelle patiente
+          + Nouveau patient
         </button>
       </div>
       <input
         type="text"
         className="input-field mb-4"
-        placeholder="Rechercher une patiente (nom, prénom ou dossier)"
+        placeholder="Rechercher un patient (nom, prénom ou dossier)"
         value={search}
         onChange={e => setSearch(e.target.value)}
       />
-      <p className="text-gray-600 mb-6">Ajoutez, modifiez ou consultez les patientes hospitalisées à la maternité.</p>
+      <p className="text-gray-600 mb-6">Ajoutez, modifiez ou consultez les patients maternité.</p>
       {error && <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">{error}</div>}
       {success && <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4 text-green-700">{success}</div>}
       <div className="card mb-6">
         {loading ? (
           <div className="flex items-center justify-center h-24">Chargement...</div>
         ) : filteredPatients.length === 0 ? (
-          <div className="text-gray-500">Aucune patiente hospitalisée à la maternité.</div>
+          <div className="text-gray-500">Aucun patient maternité enregistré.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -158,6 +151,7 @@ const PatientsManagementMaternite: React.FC = () => {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Poids (kg)</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Adresse</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Téléphone</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -192,7 +186,7 @@ const PatientsManagementMaternite: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg relative flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between px-6 py-4 border-b sticky top-0 bg-white z-20 rounded-t-lg">
-              <h2 className="text-xl font-bold">Enregistrement d'une patiente hospitalisée à la maternité</h2>
+              <h2 className="text-xl font-bold">Enregistrement d'un patient maternité</h2>
               <button
                 className="text-gray-400 hover:text-gray-600 ml-2"
                 onClick={() => setShowForm(false)}
@@ -241,28 +235,6 @@ const PatientsManagementMaternite: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700">Numéro de téléphone</label>
                   <input type="tel" name="telephone" value={form.telephone} onChange={handleChange} required className="input-field" />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Type de chambre</label>
-                  <input
-                    type="text"
-                    className="input-field mb-1"
-                    placeholder="Rechercher un type de chambre..."
-                    value={roomTypeSearch}
-                    onChange={e => setRoomTypeSearch(e.target.value)}
-                  />
-                  <select
-                    name="roomType"
-                    value={form.roomType}
-                    onChange={handleChange}
-                    required
-                    className="input-field"
-                  >
-                    <option value="">Sélectionner</option>
-                    {ROOM_TYPES.filter(rt => rt.label.toLowerCase().includes(roomTypeSearch.toLowerCase())).map(rt => (
-                      <option key={rt.value} value={rt.value}>{rt.label}</option>
-                    ))}
-                  </select>
-                </div>
               </div>
               <div className="pt-4 flex flex-col sm:flex-row justify-end gap-2 sticky bottom-0 bg-white z-10 pb-2">
                 <button type="button" className="btn-secondary w-full sm:w-auto" onClick={() => setShowForm(false)}>
@@ -280,7 +252,7 @@ const PatientsManagementMaternite: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg relative flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between px-6 py-4 border-b sticky top-0 bg-white z-20 rounded-t-lg">
-              <h2 className="text-xl font-bold">Modifier la patiente</h2>
+              <h2 className="text-xl font-bold">Modifier le patient</h2>
               <button
                 className="text-gray-400 hover:text-gray-600 ml-2"
                 onClick={() => setShowEditForm(false)}
@@ -297,28 +269,20 @@ const PatientsManagementMaternite: React.FC = () => {
               setEditError(null);
               setEditSuccess(null);
               try {
-                await axios.put(`/api/patients/${editForm.id}`,
-                  {
-                    firstName: editForm.firstName,
-                    lastName: editForm.lastName,
-                    sexe: editForm.sexe,
-                    dateNaissance: editForm.dateNaissance,
-                    poids: editForm.poids,
-                    adresse: editForm.adresse,
-                    telephone: editForm.telephone,
-                  }
-                );
-                // Modification du type de chambre si besoin
-                if (editForm.hospitalizationId && editForm.roomType) {
-                  await axios.patch(`/api/hospitalizations/${editForm.hospitalizationId}`, {
-                    roomType: editForm.roomType
-                  });
-                }
-                setEditSuccess('Patiente modifiée avec succès !');
+                await axios.patch(`/api/patients/${editForm.id}`, {
+                  firstName: editForm.firstName,
+                  lastName: editForm.lastName,
+                  gender: editForm.sexe,
+                  dateOfBirth: editForm.dateNaissance,
+                  weight: editForm.poids,
+                  address: editForm.adresse,
+                  phone: editForm.telephone,
+                });
+                setEditSuccess('Patient modifié avec succès !');
                 setShowEditForm(false);
                 fetchPatients();
               } catch (e: any) {
-                setEditError(e.response?.data?.error || 'Erreur lors de la modification de la patiente');
+                setEditError(e.response?.data?.error || 'Erreur lors de la modification du patient');
               } finally {
                 setEditLoading(false);
               }
@@ -326,15 +290,15 @@ const PatientsManagementMaternite: React.FC = () => {
               <div className="space-y-4 pb-2">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Prénom</label>
-                  <input type="text" name="firstName" value={editForm.firstName} onChange={e => setEditForm((f: any) => ({ ...f, firstName: e.target.value }))} required className="input-field" placeholder="Entrez le prénom" />
+                  <input type="text" name="firstName" value={editForm.firstName} onChange={(e) => setEditForm({...editForm, firstName: e.target.value})} required className="input-field" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Nom</label>
-                  <input type="text" name="lastName" value={editForm.lastName} onChange={e => setEditForm((f: any) => ({ ...f, lastName: e.target.value }))} required className="input-field" placeholder="Entrez le nom" />
+                  <input type="text" name="lastName" value={editForm.lastName} onChange={(e) => setEditForm({...editForm, lastName: e.target.value})} required className="input-field" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Sexe</label>
-                  <select name="sexe" value={editForm.sexe} onChange={e => setEditForm((f: any) => ({ ...f, sexe: e.target.value }))} required className="input-field">
+                  <select name="sexe" value={editForm.sexe} onChange={(e) => setEditForm({...editForm, sexe: e.target.value})} required className="input-field">
                     <option value="">Sélectionner</option>
                     <option value="Masculin">Masculin</option>
                     <option value="Féminin">Féminin</option>
@@ -342,7 +306,11 @@ const PatientsManagementMaternite: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Date de naissance</label>
-                  <input type="date" name="dateNaissance" value={editForm.dateNaissance} onChange={e => setEditForm((f: any) => ({ ...f, dateNaissance: e.target.value, age: calculateAge(e.target.value) }))} required className="input-field" />
+                  <input type="date" name="dateNaissance" value={editForm.dateNaissance} onChange={(e) => {
+                    const newForm = {...editForm, dateNaissance: e.target.value};
+                    newForm.age = calculateAge(e.target.value).toString();
+                    setEditForm(newForm);
+                  }} required className="input-field" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Âge</label>
@@ -350,49 +318,27 @@ const PatientsManagementMaternite: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Poids (kg)</label>
-                  <input type="number" name="poids" value={editForm.poids} onChange={e => setEditForm((f: any) => ({ ...f, poids: e.target.value }))} required min="0" className="input-field" />
+                  <input type="number" name="poids" value={editForm.poids} onChange={(e) => setEditForm({...editForm, poids: e.target.value})} required min="0" className="input-field" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Adresse physique</label>
-                  <input type="text" name="adresse" value={editForm.adresse} onChange={e => setEditForm((f: any) => ({ ...f, adresse: e.target.value }))} required className="input-field" />
+                  <input type="text" name="adresse" value={editForm.adresse} onChange={(e) => setEditForm({...editForm, adresse: e.target.value})} required className="input-field" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Numéro de téléphone</label>
-                  <input type="tel" name="telephone" value={editForm.telephone} onChange={e => setEditForm((f: any) => ({ ...f, telephone: e.target.value }))} required className="input-field" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Type de chambre</label>
-                  <input
-                    type="text"
-                    className="input-field mb-1"
-                    placeholder="Rechercher un type de chambre..."
-                    value={roomTypeSearch}
-                    onChange={e => setRoomTypeSearch(e.target.value)}
-                  />
-                  <select
-                    name="roomType"
-                    value={editForm.roomType || ''}
-                    onChange={e => setEditForm((f: any) => ({ ...f, roomType: e.target.value }))}
-                    required
-                    className="input-field"
-                  >
-                    <option value="">Sélectionner</option>
-                    {ROOM_TYPES.filter(rt => rt.label.toLowerCase().includes(roomTypeSearch.toLowerCase())).map(rt => (
-                      <option key={rt.value} value={rt.value}>{rt.label}</option>
-                    ))}
-                  </select>
+                  <input type="tel" name="telephone" value={editForm.telephone} onChange={(e) => setEditForm({...editForm, telephone: e.target.value})} required className="input-field" />
                 </div>
               </div>
               <div className="pt-4 flex flex-col sm:flex-row justify-end gap-2 sticky bottom-0 bg-white z-10 pb-2">
+                {editError && <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">{editError}</div>}
+                {editSuccess && <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4 text-green-700">{editSuccess}</div>}
                 <button type="button" className="btn-secondary w-full sm:w-auto" onClick={() => setShowEditForm(false)}>
                   Annuler
                 </button>
                 <button type="submit" className="btn-primary w-full sm:w-auto" disabled={editLoading}>
-                  {editLoading ? 'Modification...' : 'Enregistrer'}
+                  {editLoading ? 'Modification...' : 'Modifier'}
                 </button>
               </div>
-              {editError && <div className="text-red-600 text-sm mt-2">{editError}</div>}
-              {editSuccess && <div className="text-green-600 text-sm mt-2">{editSuccess}</div>}
             </form>
           </div>
         </div>

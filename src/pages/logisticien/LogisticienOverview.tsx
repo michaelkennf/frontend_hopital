@@ -7,27 +7,34 @@ const LogisticienOverview: React.FC = () => {
   const [examsCount, setExamsCount] = useState<number | null>(null);
   const [pendingRequests, setPendingRequests] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
       setLoading(true);
+      setError(null);
       try {
         // Stock total (nombre de médicaments)
         const stockRes = await axios.get('/api/medications');
         setStockCount(Array.isArray(stockRes.data) ? stockRes.data.length : (stockRes.data.medications?.length ?? 0));
+        
         // Types de consultations
         const consRes = await axios.get('/api/consultations/types');
         console.log('Types de consultations:', consRes.data);
-        setConsultationsCount(Array.isArray(consRes.data) ? consRes.data.length : (consRes.data.types?.length ?? 0));
+        setConsultationsCount(Array.isArray(consRes.data) ? consRes.data.length : (consRes.data.consultationTypes?.length ?? 0));
+        
         // Types d'examens
         const examsRes = await axios.get('/api/exams/types');
         console.log('Types d\'examens:', examsRes.data);
         setExamsCount(Array.isArray(examsRes.data) ? examsRes.data.length : (examsRes.data.examTypes?.length ?? 0));
+        
         // Demandes de fournitures en attente
         const reqRes = await axios.get('/api/supply-requests');
         const requests = reqRes.data.requests || [];
         setPendingRequests(requests.filter((r: any) => r.status === 'pending').length);
-      } catch {
+      } catch (err: any) {
+        console.error('Erreur lors du chargement des statistiques:', err);
+        setError(err.response?.data?.error || err.message || 'Erreur lors du chargement des données');
         setStockCount(0);
         setConsultationsCount(0);
         setExamsCount(0);
@@ -47,6 +54,14 @@ const LogisticienOverview: React.FC = () => {
           Tableau de bord du logisticien de la Polyclinique des Apôtres
         </p>
       </div>
+      
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 text-red-700">
+          <p className="font-medium">Erreur de chargement :</p>
+          <p className="text-sm">{error}</p>
+        </div>
+      )}
+      
       {loading ? (
         <div className="text-center py-8">Chargement...</div>
       ) : (

@@ -7,6 +7,7 @@ import RHOverview from './RHOverview';
 import EmployeesManagement from './EmployeesManagement';
 import LeaveRequests from './LeaveRequests';
 import AdvanceRequests from './AdvanceRequests';
+import CreditRequests from './CreditRequests';
 import Attendance from './Attendance';
 import Settings from '../admin/Settings';
 
@@ -50,6 +51,15 @@ const RHDashboard: React.FC = () => {
       )
     },
     {
+      name: 'Crédits',
+      href: '/rh/credit-requests',
+      icon: (
+        <svg className="mr-3 h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        </svg>
+      )
+    },
+    {
       name: 'Présences',
       href: '/rh/attendance',
       icon: (
@@ -67,6 +77,7 @@ const RHDashboard: React.FC = () => {
         <Route path="/employees" element={<EmployeesManagement />} />
         <Route path="/leave-requests" element={<LeaveRequests />} />
         <Route path="/advance-requests" element={<AdvanceRequests />} />
+        <Route path="/credit-requests" element={<CreditRequests />} />
         <Route path="/attendance" element={<Attendance />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const ROOM_TYPES = [
-  { label: 'Chambre commune (1$ / jour)', value: 'Hospitalisation - Chambre commune', price: 1 },
-  { label: 'Chambre privée (5$ / jour)', value: 'Hospitalisation - Chambre privée', price: 5 },
+  { label: 'Chambre commune', value: 'Hospitalisation - Chambre commune', price: 1 },
+  { label: 'Chambre privée', value: 'Hospitalisation - Chambre privée', price: 5 },
 ];
 
 function calculateAge(dateNaissance: string) {

@@ -12,27 +12,40 @@ const AdminOverview: React.FC = () => {
   
   const navigate = useNavigate();
   const lastFetchRef = useRef<number>(0);
-  const intervalRef = useRef<any>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
+  const fetchingRef = useRef(false); // Protection contre les appels multiples
 
   // Fonction de chargement des stats simplifiée
   const fetchStats = useCallback(async (forceRefresh = false) => {
     if (!mountedRef.current) return;
+    
+    // Protection contre les appels multiples
+    if (fetchingRef.current) {
+      console.log('Chargement déjà en cours, ignoré');
+      return;
+    }
     
     const now = Date.now();
     const cacheDuration = 30000; // 30 secondes de cache
     
     // Vérifier le cache sauf si force refresh ou premier chargement
     if (!forceRefresh && lastFetchRef.current > 0 && now - lastFetchRef.current < cacheDuration) {
+      console.log('Cache encore valide, pas de rechargement');
       return;
     }
 
     console.log('Chargement des stats...', forceRefresh ? '(force refresh)' : '(cache expiré)');
     
+    fetchingRef.current = true;
+    
+    // Gérer les états de chargement
     if (forceRefresh) {
       setRefreshing(true);
+      setLoading(false); // S'assurer que loading est false pendant refresh
     } else {
       setLoading(true);
+      setRefreshing(false); // S'assurer que refreshing est false pendant loading
     }
     
     setError(null);
@@ -40,9 +53,15 @@ const AdminOverview: React.FC = () => {
     try {
       // Appels API en parallèle avec timeouts courts
       const [usersRes, logsRes, healthRes] = await Promise.allSettled([
-        axios.get('/api/users', { timeout: 3000 }),
-        axios.get('/api/logs?page=1&limit=1', { timeout: 3000 }),
-        axios.get('/api/health', { timeout: 2000 })
+        axios.get('/api/users', { 
+          timeout: 5000
+        }),
+        axios.get('/api/logs?page=1&limit=1', { 
+          timeout: 5000
+        }),
+        axios.get('/api/health', { 
+          timeout: 3000
+        })
       ]);
 
       if (!mountedRef.current) return;
@@ -88,47 +107,71 @@ const AdminOverview: React.FC = () => {
 
       if (hasError) {
         setError('Certaines données n\'ont pas pu être chargées');
+      } else {
+        setError(null); // Effacer les erreurs précédentes si tout va bien
       }
 
       lastFetchRef.current = now;
       console.log('Stats mises à jour à:', new Date(now).toLocaleTimeString());
 
-    } catch (e) {
+    } catch (e: any) {
       if (!mountedRef.current) return;
       console.error('Erreur générale lors du chargement des stats:', e);
-      setError('Erreur de connexion au serveur');
+      
+      // Gestion spécifique des erreurs d'authentification
+      if (e.response?.status === 401) {
+        setError('Erreur d\'authentification. Veuillez vous reconnecter.');
+        // Rediriger vers la page de login si nécessaire
+        setTimeout(() => {
+          if (mountedRef.current) {
+            navigate('/login');
+          }
+        }, 2000);
+      } else {
+        setError('Erreur de connexion au serveur');
+      }
+      
       setUserCount(null);
       setLogCount(null);
       setSystemStatus('Erreur');
     } finally {
       if (!mountedRef.current) return;
+      fetchingRef.current = false;
+      
+      // Réinitialiser les états de chargement
       if (forceRefresh) {
         setRefreshing(false);
       } else {
         setLoading(false);
       }
     }
-  }, []);
+  }, [navigate]);
 
   // Initialisation simple
   useEffect(() => {
     console.log('Initialisation du dashboard admin');
-    fetchStats(true);
+    mountedRef.current = true;
     
-    // Rafraîchissement automatique toutes les 2 minutes
+    // Chargement initial (pas de force refresh pour éviter la confusion)
+    fetchStats(false);
+    
+    // Rafraîchissement automatique toutes les 5 minutes (au lieu de 2)
     intervalRef.current = setInterval(() => {
       if (mountedRef.current) {
-        fetchStats();
+        console.log('Rafraîchissement automatique');
+        fetchStats(false);
       }
-    }, 120000);
+    }, 300000); // 5 minutes
 
     return () => {
+      console.log('Nettoyage du dashboard admin');
       mountedRef.current = false;
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
-  }, []);
+  }, [fetchStats]);
 
   // Fonction de rafraîchissement manuel
   const handleManualRefresh = useCallback(() => {

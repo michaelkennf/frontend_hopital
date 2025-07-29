@@ -11,9 +11,9 @@ const PDGOverview: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Nouvelle fonction pour charger les stats (réutilisable)
-  const fetchStats = async () => {
-    setLoading(true);
-    try {
+    const fetchStats = async () => {
+      setLoading(true);
+      try {
       const res = await axios.get('/api/stats');
       setEmployeeCount(res.data.employeeCount ?? 0);
       setPatientCount(res.data.patientCount ?? 0);
@@ -21,16 +21,16 @@ const PDGOverview: React.FC = () => {
       setRevenue(res.data.revenue ?? 0);
       setRevenueByType(res.data.revenueByType ?? { consultation: 0, exam: 0, medication: 0, hospitalization: 0 });
       setPendingSupplyRequests(res.data.pendingSupplyRequests ?? 0);
-    } catch {
-      setEmployeeCount(0);
-      setPatientCount(0);
-      setLowStockCount(0);
-      setRevenue(0);
-      setPendingSupplyRequests(0);
-    } finally {
-      setLoading(false);
-    }
-  };
+      } catch {
+        setEmployeeCount(0);
+        setPatientCount(0);
+        setLowStockCount(0);
+        setRevenue(0);
+        setPendingSupplyRequests(0);
+      } finally {
+        setLoading(false);
+      }
+    };
 
   // Rafraîchissement initial et auto toutes les 30s
   useEffect(() => {

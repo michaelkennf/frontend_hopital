@@ -221,13 +221,13 @@ const AdvanceRequests: React.FC = () => {
                   <td className="px-4 py-2">{r.status}</td>
                   <td className="px-4 py-2">
                     {isPDG ? (
-                      <textarea
-                        className="input-field"
+                    <textarea
+                      className="input-field"
                         placeholder="Commentaire PDG..."
                         value={comment[r.id] || r.pdgComment || r.reason || ''}
-                        onChange={(e) => handleCommentChange(r.id, e.target.value)}
-                        disabled={r.status !== 'pending'}
-                      />
+                      onChange={(e) => handleCommentChange(r.id, e.target.value)}
+                      disabled={r.status !== 'pending'}
+                    />
                     ) : (
                       <div className="text-sm text-gray-600">
                         {r.pdgComment || r.reason || 'Aucun commentaire'}

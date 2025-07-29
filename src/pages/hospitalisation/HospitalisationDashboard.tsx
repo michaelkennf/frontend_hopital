@@ -7,6 +7,7 @@ import Settings from '../admin/Settings';
 import PatientsManagementHospitalisation from './PatientsManagementHospitalisation';
 import ExamsListHospitalisation from './ExamsListHospitalisation';
 import MedicationsListHospitalisation from './MedicationsListHospitalisation';
+import HistoriqueHospitalisation from './HistoriqueHospitalisation';
 
 const ROOM_TYPES = [
   'Chambre simple',
@@ -165,6 +166,9 @@ const HospitalisationDashboard: React.FC = () => {
     { name: 'Hospitalisations', href: '/hospitalisation/hospitalisations', icon: (
       <svg className="mr-3 h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
     ) },
+    { name: 'Historique', href: '/hospitalisation/historique', icon: (
+      <svg className="mr-3 h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+    ) },
   ];
 
   function HospitalisationOverview() {
@@ -277,18 +281,31 @@ const HospitalisationDashboard: React.FC = () => {
     const [modalLoading, setModalLoading] = useState(false);
     const [modalError, setModalError] = useState<string | null>(null);
 
+    // Fonction pour calculer le prix basé sur le type de chambre
+    const calculatePrice = (roomType: string, days: number) => {
+      const pricePerDay = roomType.toLowerCase().includes('privée') ? 5 : 1;
+      return days * pricePerDay;
+    };
+
     const handleOpenExitModal = (hosp: any) => {
       setExitDays(hosp.days?.toString() || '');
       setShowExitModal({ open: true, hosp });
       setModalError(null);
     };
+
     const handleExitSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!showExitModal.hosp) return;
       setModalLoading(true);
       setModalError(null);
       try {
-        await axios.patch(`/api/hospitalizations/${showExitModal.hosp.id}/exit`, { days: exitDays });
+        const days = parseInt(exitDays, 10);
+        const totalPrice = calculatePrice(showExitModal.hosp.roomType, days);
+        
+        await axios.patch(`/api/hospitalizations/${showExitModal.hosp.id}/exit`, { 
+          days: exitDays,
+          price: totalPrice
+        });
         setShowExitModal({ open: false, hosp: null });
         const hospRes = await axios.get('/api/hospitalizations');
         setHospitalizations(hospRes.data.hospitalizations);
@@ -352,7 +369,14 @@ const HospitalisationDashboard: React.FC = () => {
               <form onSubmit={handleExitSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Nombre de jours passés</label>
-                  <input type="number" min="1" value={exitDays} onChange={e => setExitDays(e.target.value)} required className="input-field" />
+                  <input 
+                    type="number" 
+                    min="1" 
+                    value={exitDays} 
+                    onChange={e => setExitDays(e.target.value)} 
+                    required 
+                    className="input-field" 
+                  />
                 </div>
                 {modalError && <div className="text-red-600 text-sm mt-2">{modalError}</div>}
                 <div className="flex justify-end gap-2">
@@ -376,6 +400,7 @@ const HospitalisationDashboard: React.FC = () => {
           <Route path="/exams" element={<ExamsListHospitalisation />} />
           <Route path="/medications" element={<MedicationsListHospitalisation />} />
           <Route path="/hospitalisations" element={<Hospitalisations />} />
+          <Route path="/historique" element={<HistoriqueHospitalisation />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </GlobalErrorBoundary>

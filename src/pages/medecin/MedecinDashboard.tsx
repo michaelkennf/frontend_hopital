@@ -12,6 +12,7 @@ interface Patient {
   folderNumber: string;
   gender: string;
   dateOfBirth: string;
+  weight?: number;
   address: string;
   phone: string;
 }
@@ -36,6 +37,7 @@ interface Exam {
   id: number;
   date: string;
   exam: { id: number; name: string; price: number };
+  results?: string;
 }
 
 const navigationItems = [
@@ -154,12 +156,62 @@ function PatientsDossiers() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [dossier, setDossier] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [consultationTypes, setConsultationTypes] = useState<any[]>([]);
   const [newConsultation, setNewConsultation] = useState({ typeId: '', notes: '' });
   const [addingConsultation, setAddingConsultation] = useState(false);
-  const [treatmentForms, setTreatmentForms] = useState<{ [consultationId: number]: { medicationName: string; dosage: string; quantity: string; notes: string; loading: boolean } }>({});
+  const [treatmentForms, setTreatmentForms] = useState<{ [consultationId: number]: { medicationName: string; notes: string; loading: boolean; visible: boolean } }>({});
+
+  // États pour la recherche et filtres
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Fonction helper pour récupérer le nom du type de consultation
+  const getSelectedConsultationTypeName = () => {
+    if (!newConsultation.typeId || !consultationTypes.length) return null;
+    const selectedType = consultationTypes.find(ct => ct.id.toString() === newConsultation.typeId);
+    return selectedType?.name || null;
+  };
+
+  // Vérifier si une consultation est du jour
+  const isConsultationToday = (consultationDate: string) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const consultationDay = new Date(consultationDate).toISOString().slice(0, 10);
+    return today === consultationDay;
+  };
+
+  // Initialiser un formulaire de traitement fermé
+  const initializeTreatmentForm = (consultationId: number) => {
+    setTreatmentForms(forms => ({
+      ...forms,
+      [consultationId]: {
+        medicationName: '',
+        notes: '',
+        loading: false,
+        visible: false // Toujours fermé par défaut
+      }
+    }));
+  };
+
+  // Regrouper les examens par date
+  const getExamsForDate = (consultationDate: string) => {
+    if (!dossier?.exams) return [];
+    const consultationDay = new Date(consultationDate).toISOString().slice(0, 10);
+    return dossier.exams.filter((exam: any) => {
+      const examDay = new Date(exam.date).toISOString().slice(0, 10);
+      return examDay === consultationDay;
+    });
+  };
+
+  // Filtrer les patients selon les critères
+  const filteredPatients = patients.filter(patient => {
+    const matchesSearch = 
+      patient.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.folderNumber.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesSearch;
+  });
 
   // Charger la liste des patients au montage
   useEffect(() => {
@@ -175,7 +227,36 @@ function PatientsDossiers() {
     setSelectedPatient(patient);
     setLoading(true);
     axios.get(`/api/patients/${patient.id}/dossier`)
-      .then(res => setDossier(res.data))
+      .then(res => {
+        setDossier(res.data);
+        
+        // Chercher la consultation la plus récente (aujourd'hui ou la plus récente)
+        const today = new Date().toISOString().slice(0, 10);
+        let selectedConsultation = null;
+        
+        if (res.data.consultations && res.data.consultations.length > 0) {
+          // D'abord chercher une consultation d'aujourd'hui
+          selectedConsultation = res.data.consultations.find((c: any) => 
+            c.date?.slice(0, 10) === today
+          );
+          
+          // Si pas de consultation aujourd'hui, prendre la plus récente
+          if (!selectedConsultation) {
+            selectedConsultation = res.data.consultations[0]; // La plus récente (triée par date desc)
+          }
+        }
+        
+        if (selectedConsultation) {
+          console.log('Consultation sélectionnée à la caisse:', selectedConsultation);
+          setNewConsultation(prev => ({
+            ...prev,
+            typeId: selectedConsultation.consultation.id.toString()
+          }));
+        } else {
+          // Si pas de consultation, réinitialiser
+          setNewConsultation({ typeId: '', notes: '' });
+        }
+      })
       .catch(() => setError('Erreur lors du chargement du dossier patient'))
       .finally(() => setLoading(false));
   };
@@ -189,24 +270,42 @@ function PatientsDossiers() {
     }
   }, [selectedPatient]);
 
-  // Ajouter une nouvelle consultation
+  // Ajouter une nouvelle consultation (signes uniquement, pas de traitement)
   const handleAddConsultation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPatient) return;
     setAddingConsultation(true);
     setError(null);
     try {
-      const res = await axios.post('/api/consultations', {
+      console.log('Envoi de la consultation avec signes:', {
         patientId: selectedPatient.id,
         consultationTypeId: newConsultation.typeId,
         date: new Date().toISOString(),
         notes: newConsultation.notes
       });
+      
+      const res = await axios.post('/api/consultations', {
+        patientId: selectedPatient.id,
+        consultationTypeId: newConsultation.typeId, // Utilise le type auto-sélectionné
+        date: new Date().toISOString(),
+        notes: newConsultation.notes
+      });
+      
+      console.log('Réponse de la création de consultation:', res.data);
+      
       // Rafraîchir le dossier
       const dossierRes = await axios.get(`/api/patients/${selectedPatient.id}/dossier`);
+      console.log('Dossier mis à jour:', dossierRes.data);
       setDossier(dossierRes.data);
+      
+      // Réinitialiser le formulaire de consultation
       setNewConsultation({ typeId: '', notes: '' });
-    } catch {
+      
+      // S'assurer que tous les formulaires de traitement sont fermés
+      setTreatmentForms({});
+      
+    } catch (err: any) {
+      console.error('Erreur lors de l\'ajout de la consultation:', err);
       setError('Erreur lors de l\'ajout de la consultation');
     } finally {
       setAddingConsultation(false);
@@ -224,18 +323,37 @@ function PatientsDossiers() {
     }));
   };
 
+  // Afficher/masquer le formulaire de traitement
+  const toggleTreatmentForm = (consultationId: number, consultationDate: string) => {
+    // Empêcher l'ouverture du formulaire pour les consultations passées
+    if (!isConsultationToday(consultationDate)) {
+      return;
+    }
+    
+    // Initialiser le formulaire s'il n'existe pas encore
+    if (!treatmentForms[consultationId]) {
+      initializeTreatmentForm(consultationId);
+    }
+    
+    setTreatmentForms(forms => ({
+      ...forms,
+      [consultationId]: {
+        ...forms[consultationId],
+        visible: !forms[consultationId]?.visible
+      }
+    }));
+  };
+
   // Ajouter un traitement à une consultation
   const handleAddTreatment = async (consultationId: number, e: React.FormEvent) => {
     e.preventDefault();
     const form = treatmentForms[consultationId];
-    if (!form || !form.medicationName || !form.quantity) return;
+    if (!form || !form.medicationName) return;
     setTreatmentForms(forms => ({ ...forms, [consultationId]: { ...form, loading: true } }));
     setError(null);
     try {
       await axios.post(`/api/consultations/${consultationId}/treatments`, {
         medicationName: form.medicationName,
-        dosage: form.dosage,
-        quantity: form.quantity,
         notes: form.notes
       });
       // Rafraîchir le dossier
@@ -243,133 +361,331 @@ function PatientsDossiers() {
         const dossierRes = await axios.get(`/api/patients/${selectedPatient.id}/dossier`);
         setDossier(dossierRes.data);
       }
-      setTreatmentForms(forms => ({ ...forms, [consultationId]: { medicationName: '', dosage: '', quantity: '', notes: '', loading: false } }));
+      setTreatmentForms(forms => ({ 
+        ...forms, 
+        [consultationId]: { 
+          medicationName: '', 
+          notes: '', 
+          loading: false,
+          visible: false 
+        } 
+      }));
     } catch {
       setError("Erreur lors de l'ajout du traitement");
       setTreatmentForms(forms => ({ ...forms, [consultationId]: { ...form, loading: false } }));
     }
   };
 
-  // DEBUG : log structure du dossier
-  console.log('dossier', dossier);
-  console.log('dossier.consultations', dossier?.consultations);
-  console.log('dossier.exams', dossier?.exams);
-
   return (
     <div className="p-6">
       <h2 className="font-semibold text-lg mb-2">Liste des patients</h2>
       {loading && <div>Chargement...</div>}
-      <ul className="divide-y border rounded bg-white">
-        {(patients ?? []).map((p) => (
-          <li key={p.id} className={`p-2 cursor-pointer hover:bg-blue-50 ${selectedPatient?.id === p.id ? 'bg-blue-100' : ''}`}
-              onClick={() => handleSelectPatient(p)}>
-            <span className="font-medium">{p.lastName} {p.firstName}</span> <span className="text-xs text-gray-500">({p.folderNumber})</span>
-          </li>
-        ))}
-      </ul>
-      {selectedPatient && dossier ? (
-        <div className="mt-6">
-          <h2 className="font-semibold text-lg mb-2">Dossier de {selectedPatient.lastName} {selectedPatient.firstName}</h2>
-          <div className="mb-4">
-            <span className="text-sm text-gray-600">Sexe : {selectedPatient.gender} | Date de naissance : {new Date(selectedPatient.dateOfBirth).toLocaleDateString()}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Liste des patients */}
+        <div className="lg:col-span-1">
+          <h2 className="font-semibold text-lg mb-4">Sélectionner un patient</h2>
+          
+          {/* Barre de recherche et filtres */}
+          <div className="mb-4 space-y-3">
+            {/* Recherche */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Rechercher par nom, prénom ou dossier..."
+                className="input-field flex-1"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              
+              <button
+                onClick={() => setSearchTerm('')}
+                className="btn-secondary px-3"
+                title="Réinitialiser la recherche"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Indicateur de résultats */}
+            {searchTerm && (
+              <div className="text-sm text-gray-600">
+                {filteredPatients.length} patient(s) trouvé(s)
+                {patients.length !== filteredPatients.length && ` sur ${patients.length} total`}
+              </div>
+            )}
+          </div>
+
+          {/* Liste des patients filtrés */}
+          <div className="max-h-96 overflow-y-auto border rounded">
+            {loading ? (
+              <div className="p-4 text-center text-gray-500">Chargement...</div>
+            ) : filteredPatients.length === 0 ? (
+              <div className="p-4 text-center text-gray-500">
+                {searchTerm ? 'Aucun patient trouvé' : 'Aucun patient enregistré'}
+              </div>
+            ) : (
+              filteredPatients.map(patient => (
+                <div
+                  key={patient.id}
+                  onClick={() => handleSelectPatient(patient)}
+                  className={`p-3 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
+                    selectedPatient?.id === patient.id ? 'bg-blue-50 border-blue-200' : ''
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{patient.firstName} {patient.lastName}</div>
+                      <div className="text-sm text-gray-600">
+                        Dossier: {patient.folderNumber}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded-full ${
+                        patient.gender === 'M' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'
+                      }`}>
+                        {patient.gender === 'M' ? 'Homme' : 'Femme'}
+                      </span>
+                      {patient.weight && (
+                        <span className="text-gray-400">
+                          {patient.weight} kg
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+          {/* Dossier de patient sélectionné */}
+          {selectedPatient && dossier ? (
+            <div className="lg:col-span-2">
+              <h2 className="font-semibold text-lg mb-2">Dossier de {selectedPatient.lastName} {selectedPatient.firstName}</h2>
+              
+              {/* Informations du patient */}
+              <div className="mb-6 p-4 bg-gray-50 rounded border">
+                <h3 className="font-semibold text-gray-800 mb-3">Informations du patient</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-700">Dossier :</span> 
+                    <span className="ml-2 text-gray-600">{selectedPatient.folderNumber}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Sexe :</span> 
+                    <span className="ml-2 text-gray-600">{selectedPatient.gender}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Date de naissance :</span> 
+                    <span className="ml-2 text-gray-600">{new Date(selectedPatient.dateOfBirth).toLocaleDateString()}</span>
+                  </div>
+                  {selectedPatient.weight && (
+                    <div>
+                      <span className="font-medium text-gray-700">Poids :</span> 
+                      <span className="ml-2 text-gray-600">{selectedPatient.weight} kg</span>
+                    </div>
+                  )}
+                  <div>
+                    <span className="font-medium text-gray-700">Adresse :</span> 
+                    <span className="ml-2 text-gray-600">{selectedPatient.address}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Téléphone :</span> 
+                    <span className="ml-2 text-gray-600">{selectedPatient.phone}</span>
+                  </div>
+                </div>
           </div>
           {/* Formulaire ajout consultation */}
           <form className="mb-6 p-4 bg-blue-50 rounded" onSubmit={handleAddConsultation}>
             <h3 className="font-semibold mb-2">Ajouter une consultation</h3>
-            <div className="mb-2">
-              <label className="block text-sm mb-1">Type de consultation</label>
-              <select
-                className="input-field"
-                value={newConsultation.typeId}
-                onChange={e => setNewConsultation(c => ({ ...c, typeId: e.target.value }))}
-                required
-              >
-                <option value="">Sélectionner...</option>
-                {(consultationTypes ?? []).map((ct: any) => (
-                  <option key={ct.id} value={ct.id}>{ct.name}</option>
-                ))}
-              </select>
+                
+                {/* Affichage du type de consultation sélectionné à la caisse */}
+                {newConsultation.typeId && consultationTypes.length > 0 && (
+                  <div className="mb-3 p-3 bg-green-100 rounded border-l-4 border-green-400">
+                    <div className="flex items-center">
+                      <svg className="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <span className="text-sm font-medium text-green-800">Type de consultation sélectionné à la caisse :</span>
+                        <div className="text-sm text-green-700 mt-1">
+                          {getSelectedConsultationTypeName() || 'Type non trouvé'}
+                        </div>
+                      </div>
+                    </div>
             </div>
+                )}
+                
             <div className="mb-2">
               <label className="block text-sm mb-1">Signes / maladie</label>
               <textarea
                 className="input-field"
                 value={newConsultation.notes}
                 onChange={e => setNewConsultation(c => ({ ...c, notes: e.target.value }))}
-                placeholder="Décrire les signes ou la maladie du patient"
-                required
+                    placeholder="Décrire les signes et maladies observés"
+                    rows={3}
               />
             </div>
-            <button type="submit" className="btn-primary mt-2" disabled={addingConsultation}>
+                <button type="submit" className="btn-primary" disabled={addingConsultation || !newConsultation.typeId}>
               {addingConsultation ? 'Ajout...' : 'Ajouter la consultation'}
             </button>
           </form>
           <div className="mb-4">
-            <h3 className="font-semibold">Consultations & traitements</h3>
-            <ul className="list-disc ml-6">
-              {(dossier?.consultations ?? []).map((c: Consultation) => (
-                <li key={c.id} className="mb-2">
+                <h3 className="font-semibold mb-3">Historique médical</h3>
+                <ul className="space-y-4">
+                  {(dossier?.consultations ?? []).map((c: Consultation) => (
+                    <li key={c.id} className="p-4 bg-white border rounded shadow-sm">
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-blue-600">{c.consultation.name}</span> 
+                          <span className="text-sm text-gray-500">le {new Date(c.date).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Signes et maladies */}
+                      {c.notes && (
+                        <div className="mb-3 p-3 bg-yellow-50 rounded border-l-4 border-yellow-400">
+                          <div className="flex items-center mb-1">
+                            <svg className="w-4 h-4 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                            <strong className="text-yellow-800 text-sm">Signes et maladies :</strong>
+                          </div>
+                          <p className="text-sm text-gray-700 ml-6 whitespace-pre-wrap">{c.notes}</p>
+                        </div>
+                      )}
+                      
+                      {/* Traitements prescrits */}
+                      {c.medications && c.medications.length > 0 && (
+                        <div className="mb-3">
+                          <div className="flex items-center mb-2">
+                            <svg className="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <strong className="text-green-700 text-sm">Traitements prescrits :</strong>
+                          </div>
+                          <ul className="ml-6 space-y-1">
+                            {(c.medications ?? []).map((m: Treatment) => (
+                              <li key={m.id} className="text-sm p-2 bg-green-50 rounded border-l-4 border-green-400">
+                                <div className="flex items-center justify-between">
                   <div>
-                    <span className="font-medium">{c.consultation.name}</span> le {new Date(c.date).toLocaleDateString()}
-                    {c.notes && (
-                      <div className="text-sm text-gray-600">Signes : {c.notes}</div>
-                    )}
+                                    <strong>{m.medicationName}</strong> 
+                                    {m.notes && <span className="text-gray-600 ml-1">- {m.notes}</span>}
+                                  </div>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {/* Examens réalisés pour cette consultation */}
+                      {getExamsForDate(c.date).length > 0 && (
+                        <div className="mb-3">
+                          <div className="flex items-center mb-2">
+                            <svg className="w-4 h-4 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <strong className="text-purple-700 text-sm">Examens réalisés :</strong>
+                          </div>
+                          <ul className="ml-6 space-y-2">
+                            {getExamsForDate(c.date).map((e: Exam) => (
+                              <li key={e.id} className="text-sm p-3 bg-purple-50 rounded border-l-4 border-purple-400">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center">
+                                    <strong className="text-purple-800">{e.exam.name}</strong>
+                                  </div>
+                                  <span className="text-sm text-gray-500">le {new Date(e.date).toLocaleDateString()}</span>
+                                </div>
+                                {e.results && (
+                                  <div className="mt-2 p-2 bg-white rounded border">
+                                    <div className="flex items-center mb-1">
+                                      <svg className="w-3 h-3 text-purple-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      <span className="text-xs font-medium text-purple-700">Résultat :</span>
+                                    </div>
+                                    <div className="text-xs text-gray-700 ml-4 whitespace-pre-wrap">{e.results}</div>
                   </div>
-                  {c.medications && c.medications.length > 0 && (
-                    <ul className="ml-4 text-sm text-gray-700">
-                      {(c.medications ?? []).map((m: Treatment) => (
-                        <li key={m.id}>Traitement : {m.medicationName} {m.dosage && `- ${m.dosage}`} (x{m.quantity}) {m.notes && `- ${m.notes}`}</li>
+                                )}
+                              </li>
                       ))}
                     </ul>
-                  )}
-                  {/* Formulaire ajout traitement */}
-                  <form className="mt-2 ml-4 p-2 bg-gray-50 rounded" onSubmit={e => handleAddTreatment(c.id, e)}>
-                    <div className="flex gap-2 mb-1">
-                      <input
-                        type="text"
+                        </div>
+                      )}
+                      
+                      {/* Formulaire ajout traitement - seulement pour les consultations du jour */}
+                      {isConsultationToday(c.date) ? (
+                        treatmentForms[c.id]?.visible ? (
+                          <form className="mt-4 p-3 bg-gray-50 rounded border" onSubmit={e => handleAddTreatment(c.id, e)}>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center">
+                                <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                <span className="text-sm font-medium text-gray-700">Ajouter un traitement :</span>
+                              </div>
+                              <button 
+                                type="button" 
+                                onClick={() => toggleTreatmentForm(c.id, c.date)}
+                                className="text-red-600 hover:text-red-800 text-sm"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                            <div className="flex gap-2 mb-2">
+                              <textarea
                         className="input-field flex-1"
                         placeholder="Médicament prescrit"
                         value={treatmentForms[c.id]?.medicationName || ''}
                         onChange={e => handleTreatmentChange(c.id, 'medicationName', e.target.value)}
+                                rows={3}
                         required
                       />
-                      <input
-                        type="text"
-                        className="input-field w-24"
-                        placeholder="Dosage"
-                        value={treatmentForms[c.id]?.dosage || ''}
-                        onChange={e => handleTreatmentChange(c.id, 'dosage', e.target.value)}
-                      />
-                      <input
-                        type="number"
-                        className="input-field w-20"
-                        placeholder="Qté"
-                        min="1"
-                        value={treatmentForms[c.id]?.quantity || ''}
-                        onChange={e => handleTreatmentChange(c.id, 'quantity', e.target.value)}
-                        required
-                      />
-                    </div>
-                    <input
-                      type="text"
-                      className="input-field mb-1"
+                              <textarea
+                                className="input-field flex-1"
                       placeholder="Notes (optionnel)"
                       value={treatmentForms[c.id]?.notes || ''}
                       onChange={e => handleTreatmentChange(c.id, 'notes', e.target.value)}
+                                rows={3}
                     />
+                            </div>
+                            <div className="flex gap-2">
                     <button type="submit" className="btn-primary btn-xs" disabled={treatmentForms[c.id]?.loading}>
                       {treatmentForms[c.id]?.loading ? 'Ajout...' : 'Ajouter traitement'}
                     </button>
+                              <button 
+                                type="button" 
+                                onClick={() => toggleTreatmentForm(c.id, c.date)}
+                                className="btn-secondary btn-xs"
+                              >
+                                Annuler
+                              </button>
+                            </div>
                   </form>
+                        ) : (
+                          <div className="mt-3">
+                            <button 
+                              type="button" 
+                              onClick={() => toggleTreatmentForm(c.id, c.date)}
+                              className="flex items-center text-blue-600 hover:text-blue-800 text-sm"
+                            >
+                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                              </svg>
+                              Ajouter un traitement
+                            </button>
+                          </div>
+                        )
+                      ) : (
+                        <div className="mt-3 text-sm text-gray-500 italic">
+                          Consultation passée - Traitements en lecture seule
+                        </div>
+                      )}
                 </li>
-              ))}
-            </ul>
-          </div>
-          <div className="mb-4">
-            <h3 className="font-semibold">Examens réalisés</h3>
-            <ul className="list-disc ml-6">
-              {(dossier?.exams ?? []).map((e: Exam) => (
-                <li key={e.id}>{e.exam.name} le {new Date(e.date).toLocaleDateString()}</li>
               ))}
             </ul>
           </div>
@@ -377,6 +693,7 @@ function PatientsDossiers() {
       ) : (
         <div className="text-gray-500">Sélectionnez un patient pour voir son dossier.</div>
       )}
+        </div>
     </div>
   );
 }
