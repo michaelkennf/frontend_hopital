@@ -32,7 +32,8 @@ interface AuthActions {
 type AuthStore = AuthState & AuthActions;
 
 // Configuration axios
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.PROD ? 'https://hopital-backend-michaelkennf.onrender.com' : 'http://localhost:5000');
 
 console.log('[AUTH STORE] API Base URL:', API_BASE_URL);
 console.log('[AUTH STORE] Environment:', import.meta.env.MODE);
