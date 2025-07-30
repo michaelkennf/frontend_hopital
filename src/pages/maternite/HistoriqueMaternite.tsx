@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+// Instance axios séparée pour les routes maternité sans authentification
+const maternityAxios = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://backend-hopital-8098.onrender.com'
+});
+
 const initialFilters = {
   // Champs spécifiques à la maternité seulement
   numeroAnnuel: '',
@@ -50,7 +55,7 @@ const HistoriqueMaternite: React.FC = () => {
   const fetchMaternites = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/maternity-history');
+      const response = await maternityAxios.get('/api/maternity-history');
       setMaternites(response.data.histories);
     } catch (error: any) {
       setError('Erreur lors du chargement des historiques de maternité');
@@ -125,7 +130,7 @@ const HistoriqueMaternite: React.FC = () => {
 
       console.log('Données envoyées:', historyData);
 
-      const response = await axios.post('/api/maternity-history', historyData);
+      const response = await maternityAxios.post('/api/maternity-history', historyData);
       
       console.log('Réponse du serveur:', response.data);
       
