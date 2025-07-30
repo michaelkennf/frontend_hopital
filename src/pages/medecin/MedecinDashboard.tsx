@@ -443,9 +443,11 @@ function PatientsDossiers() {
                     </div>
                     <div className="text-xs text-gray-500 flex items-center gap-2">
                       <span className={`px-2 py-1 rounded-full ${
-                        patient.gender === 'M' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'
+                        patient.gender === 'M' || patient.gender === 'Masculin' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'
                       }`}>
-                        {patient.gender === 'M' ? 'Homme' : 'Femme'}
+                        {patient.gender === 'M' || patient.gender === 'Masculin' ? 'Homme' : 
+                         patient.gender === 'F' || patient.gender === 'Féminin' ? 'Femme' : 
+                         patient.gender || 'Non spécifié'}
                       </span>
                       {patient.weight && (
                         <span className="text-gray-400">
