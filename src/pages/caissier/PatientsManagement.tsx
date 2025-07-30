@@ -33,8 +33,8 @@ interface Patient {
 const PatientsManagement: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
+    nom: '',
+    postNom: '',
     sexe: '',
     dateNaissance: '',
     age: '',
@@ -78,8 +78,8 @@ const PatientsManagement: React.FC = () => {
 
   const handleOpenForm = () => {
     setForm({
-      firstName: '',
-      lastName: '',
+      nom: '',
+      postNom: '',
       sexe: '',
       dateNaissance: '',
       age: '',
@@ -109,8 +109,8 @@ const PatientsManagement: React.FC = () => {
     setSuccess(null);
     try {
       const res = await axios.post('/api/patients', {
-        firstName: form.firstName,
-        lastName: form.lastName,
+        firstName: form.nom,
+        lastName: form.postNom,
         sexe: form.sexe,
         dateNaissance: form.dateNaissance,
         poids: form.poids,
@@ -120,8 +120,8 @@ const PatientsManagement: React.FC = () => {
       setSuccess('Patient enregistré avec succès !');
       setShowForm(false);
       setForm({
-        firstName: '',
-        lastName: '',
+        nom: '',
+        postNom: '',
         sexe: '',
         dateNaissance: '',
         age: '',
@@ -232,27 +232,27 @@ const PatientsManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Prénom</label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    value={form.firstName}
-                    onChange={handleChange}
-                    required
-                    className="input-field"
-                    placeholder="Entrez le prénom"
-                  />
-                </div>
-                <div>
                   <label className="block text-sm font-medium text-gray-700">Nom</label>
                   <input
                     type="text"
-                    name="lastName"
-                    value={form.lastName}
+                    name="nom"
+                    value={form.nom}
                     onChange={handleChange}
                     required
                     className="input-field"
                     placeholder="Entrez le nom"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Post-nom</label>
+                  <input
+                    type="text"
+                    name="postNom"
+                    value={form.postNom}
+                    onChange={handleChange}
+                    required
+                    className="input-field"
+                    placeholder="Entrez le post-nom"
                   />
                 </div>
                 <div>

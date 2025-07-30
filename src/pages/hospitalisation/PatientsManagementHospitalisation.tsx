@@ -21,15 +21,15 @@ function calculateAge(dateNaissance: string) {
 const PatientsManagementHospitalisation: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
+    nom: '',
+    postNom: '',
     sexe: '',
     dateNaissance: '',
     age: '',
     poids: '',
     adresse: '',
     telephone: '',
-    roomType: '',
+    numeroDossier: '',
   });
   const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,7 +66,7 @@ const PatientsManagementHospitalisation: React.FC = () => {
 
   const handleOpenForm = () => {
     setForm({
-      firstName: '', lastName: '', sexe: '', dateNaissance: '', age: '', poids: '', adresse: '', telephone: '', roomType: ''
+      nom: '', postNom: '', sexe: '', dateNaissance: '', age: '', poids: '', adresse: '', telephone: '', numeroDossier: ''
     });
     setShowForm(true);
     setError(null);
@@ -90,8 +90,8 @@ const PatientsManagementHospitalisation: React.FC = () => {
     try {
       // 1. Créer le patient
       const patientRes = await axios.post('/api/patients', {
-        firstName: form.firstName,
-        lastName: form.lastName,
+        firstName: form.nom,
+        lastName: form.postNom,
         sexe: form.sexe,
         dateNaissance: form.dateNaissance,
         poids: form.poids,
@@ -207,12 +207,12 @@ const PatientsManagementHospitalisation: React.FC = () => {
             <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-between overflow-y-auto px-6 py-4">
               <div className="space-y-4 pb-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Prénom</label>
-                  <input type="text" name="firstName" value={form.firstName} onChange={handleChange} required className="input-field" placeholder="Entrez le prénom" />
+                  <label className="block text-sm font-medium text-gray-700">Nom</label>
+                  <input type="text" name="nom" value={form.nom} onChange={handleChange} required className="input-field" placeholder="Entrez le nom" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Nom</label>
-                  <input type="text" name="lastName" value={form.lastName} onChange={handleChange} required className="input-field" placeholder="Entrez le nom" />
+                  <label className="block text-sm font-medium text-gray-700">Post-nom</label>
+                  <input type="text" name="postNom" value={form.postNom} onChange={handleChange} required className="input-field" placeholder="Entrez le post-nom" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Sexe</label>
@@ -300,8 +300,8 @@ const PatientsManagementHospitalisation: React.FC = () => {
               try {
                 await axios.put(`/api/patients/${editForm.id}`,
                   {
-                    firstName: editForm.firstName,
-                    lastName: editForm.lastName,
+                    firstName: editForm.nom,
+                    lastName: editForm.postNom,
                     sexe: editForm.sexe,
                     dateNaissance: editForm.dateNaissance,
                     poids: editForm.poids,
@@ -326,12 +326,12 @@ const PatientsManagementHospitalisation: React.FC = () => {
             }} className="flex-1 flex flex-col justify-between overflow-y-auto px-6 py-4">
               <div className="space-y-4 pb-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Prénom</label>
-                  <input type="text" name="firstName" value={editForm.firstName} onChange={e => setEditForm((f: any) => ({ ...f, firstName: e.target.value }))} required className="input-field" placeholder="Entrez le prénom" />
+                  <label className="block text-sm font-medium text-gray-700">Nom</label>
+                  <input type="text" name="nom" value={editForm.nom} onChange={e => setEditForm((f: any) => ({ ...f, nom: e.target.value }))} required className="input-field" placeholder="Entrez le nom" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Nom</label>
-                  <input type="text" name="lastName" value={editForm.lastName} onChange={e => setEditForm((f: any) => ({ ...f, lastName: e.target.value }))} required className="input-field" placeholder="Entrez le nom" />
+                  <label className="block text-sm font-medium text-gray-700">Post-nom</label>
+                  <input type="text" name="postNom" value={editForm.postNom} onChange={e => setEditForm((f: any) => ({ ...f, postNom: e.target.value }))} required className="input-field" placeholder="Entrez le post-nom" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Sexe</label>

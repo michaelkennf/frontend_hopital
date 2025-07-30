@@ -16,14 +16,32 @@ function calculateAge(dateNaissance: string) {
 const PatientsManagementMaternite: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
+    nom: '',
+    postNom: '',
     sexe: '',
     dateNaissance: '',
     age: '',
     poids: '',
     adresse: '',
     telephone: '',
+    numeroDossier: '',
+    // Champs spécifiques à la maternité
+    numeroAnnuel: '',
+    numeroMensuel: '',
+    typeAccouchement: '',
+    jumeaux: '',
+    dateAccouchement: '',
+    heureAccouchement: '',
+    sexeNouveauNe: '',
+    poidsGrammes: '',
+    apgar: '',
+    reanimation: '',
+    atbq: '',
+    indicationCesarienne: '',
+    cpn: '',
+    formuleObstetricale: '',
+    ddr: '',
+    saignementVaginal: ''
   });
   const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -59,7 +77,8 @@ const PatientsManagementMaternite: React.FC = () => {
 
   const handleOpenForm = () => {
     setForm({
-      firstName: '', lastName: '', sexe: '', dateNaissance: '', age: '', poids: '', adresse: '', telephone: ''
+      nom: '', postNom: '', sexe: '', dateNaissance: '', age: '', poids: '', adresse: '', telephone: '',
+      numeroDossier: '', numeroAnnuel: '', numeroMensuel: '', typeAccouchement: '', jumeaux: '', dateAccouchement: '', heureAccouchement: '', sexeNouveauNe: '', poidsGrammes: '', apgar: '', reanimation: '', atbq: '', indicationCesarienne: '', cpn: '', formuleObstetricale: '', ddr: '', saignementVaginal: ''
     });
     setShowForm(true);
     setError(null);
@@ -83,8 +102,8 @@ const PatientsManagementMaternite: React.FC = () => {
     try {
       // 1. Créer le patient
       const patientRes = await axios.post('/api/patients', {
-        firstName: form.firstName,
-        lastName: form.lastName,
+        firstName: form.nom,
+        lastName: form.postNom,
         sexe: form.sexe,
         dateNaissance: form.dateNaissance,
         poids: form.poids,
@@ -200,12 +219,12 @@ const PatientsManagementMaternite: React.FC = () => {
             <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-between overflow-y-auto px-6 py-4">
               <div className="space-y-4 pb-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Prénom</label>
-                  <input type="text" name="firstName" value={form.firstName} onChange={handleChange} required className="input-field" placeholder="Entrez le prénom" />
+                  <label className="block text-sm font-medium text-gray-700">Nom</label>
+                  <input type="text" name="nom" value={form.nom} onChange={handleChange} required className="input-field" placeholder="Entrez le nom" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Nom</label>
-                  <input type="text" name="lastName" value={form.lastName} onChange={handleChange} required className="input-field" placeholder="Entrez le nom" />
+                  <label className="block text-sm font-medium text-gray-700">Post-nom</label>
+                  <input type="text" name="postNom" value={form.postNom} onChange={handleChange} required className="input-field" placeholder="Entrez le post-nom" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Sexe</label>
