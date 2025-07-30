@@ -87,7 +87,7 @@ const HistoriqueMaternite: React.FC = () => {
 
       // Créer l'historique de maternité sans association à un patient spécifique
       const historyData = {
-        patientId: 1, // ID par défaut pour les historiques indépendants
+        // Ne pas envoyer patientId pour laisser le backend créer un patient automatiquement
         patientName: filters.nomPostNomPrenom,
         gender: 'F',
         age: filters.age ? parseInt(filters.age, 10) : 25,
@@ -123,7 +123,11 @@ const HistoriqueMaternite: React.FC = () => {
         saignementVaginal: filters.saignementVaginal
       };
 
-      await axios.post('/api/maternity-history', historyData);
+      console.log('Données envoyées:', historyData);
+
+      const response = await axios.post('/api/maternity-history', historyData);
+      
+      console.log('Réponse du serveur:', response.data);
       
       setSuccess('Historique de maternité enregistré avec succès !');
       
@@ -135,7 +139,8 @@ const HistoriqueMaternite: React.FC = () => {
       
     } catch (error: any) {
       console.error('Erreur lors de l\'enregistrement:', error);
-      setError(error.response?.data?.error || 'Erreur lors de l\'enregistrement de l\'historique');
+      console.error('Détails de l\'erreur:', error.response?.data);
+      setError(error.response?.data?.error || error.response?.data?.details || 'Erreur lors de l\'enregistrement de l\'historique');
     } finally {
       setSaving(false);
     }
