@@ -29,7 +29,7 @@ const PatientsManagementHospitalisation: React.FC = () => {
     poids: '',
     adresse: '',
     telephone: '',
-    numeroDossier: '',
+    roomType: '',
   });
   const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,7 +66,7 @@ const PatientsManagementHospitalisation: React.FC = () => {
 
   const handleOpenForm = () => {
     setForm({
-      nom: '', postNom: '', sexe: '', dateNaissance: '', age: '', poids: '', adresse: '', telephone: '', numeroDossier: ''
+      nom: '', postNom: '', sexe: '', dateNaissance: '', age: '', poids: '', adresse: '', telephone: '', roomType: ''
     });
     setShowForm(true);
     setError(null);
@@ -207,7 +207,7 @@ const PatientsManagementHospitalisation: React.FC = () => {
             <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-between overflow-y-auto px-6 py-4">
               <div className="space-y-4 pb-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Nom</label>
+                  <label className="block text-sm font-medium text-gray-700">Prénom</label>
                   <input type="text" name="nom" value={form.nom} onChange={handleChange} required className="input-field" placeholder="Entrez le nom" />
                 </div>
                 <div>

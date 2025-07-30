@@ -24,24 +24,6 @@ const PatientsManagementMaternite: React.FC = () => {
     poids: '',
     adresse: '',
     telephone: '',
-    numeroDossier: '',
-    // Champs spécifiques à la maternité
-    numeroAnnuel: '',
-    numeroMensuel: '',
-    typeAccouchement: '',
-    jumeaux: '',
-    dateAccouchement: '',
-    heureAccouchement: '',
-    sexeNouveauNe: '',
-    poidsGrammes: '',
-    apgar: '',
-    reanimation: '',
-    atbq: '',
-    indicationCesarienne: '',
-    cpn: '',
-    formuleObstetricale: '',
-    ddr: '',
-    saignementVaginal: ''
   });
   const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -77,8 +59,7 @@ const PatientsManagementMaternite: React.FC = () => {
 
   const handleOpenForm = () => {
     setForm({
-      nom: '', postNom: '', sexe: '', dateNaissance: '', age: '', poids: '', adresse: '', telephone: '',
-      numeroDossier: '', numeroAnnuel: '', numeroMensuel: '', typeAccouchement: '', jumeaux: '', dateAccouchement: '', heureAccouchement: '', sexeNouveauNe: '', poidsGrammes: '', apgar: '', reanimation: '', atbq: '', indicationCesarienne: '', cpn: '', formuleObstetricale: '', ddr: '', saignementVaginal: ''
+      nom: '', postNom: '', sexe: '', dateNaissance: '', age: '', poids: '', adresse: '', telephone: ''
     });
     setShowForm(true);
     setError(null);
@@ -289,8 +270,8 @@ const PatientsManagementMaternite: React.FC = () => {
               setEditSuccess(null);
               try {
                 await axios.patch(`/api/patients/${editForm.id}`, {
-                  firstName: editForm.firstName,
-                  lastName: editForm.lastName,
+                  firstName: editForm.nom,
+                  lastName: editForm.postNom,
                   gender: editForm.sexe,
                   dateOfBirth: editForm.dateNaissance,
                   weight: editForm.poids,
@@ -308,12 +289,12 @@ const PatientsManagementMaternite: React.FC = () => {
             }} className="flex-1 flex flex-col justify-between overflow-y-auto px-6 py-4">
               <div className="space-y-4 pb-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Prénom</label>
-                  <input type="text" name="firstName" value={editForm.firstName} onChange={(e) => setEditForm({...editForm, firstName: e.target.value})} required className="input-field" />
+                  <label className="block text-sm font-medium text-gray-700">Nom</label>
+                  <input type="text" name="nom" value={editForm.nom} onChange={(e) => setEditForm({...editForm, nom: e.target.value})} required className="input-field" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Nom</label>
-                  <input type="text" name="lastName" value={editForm.lastName} onChange={(e) => setEditForm({...editForm, lastName: e.target.value})} required className="input-field" />
+                  <label className="block text-sm font-medium text-gray-700">Post-nom</label>
+                  <input type="text" name="postNom" value={editForm.postNom} onChange={(e) => setEditForm({...editForm, postNom: e.target.value})} required className="input-field" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Sexe</label>

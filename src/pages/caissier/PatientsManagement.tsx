@@ -174,7 +174,7 @@ const PatientsManagement: React.FC = () => {
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">N° Dossier</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Prénom</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Post-nom</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Sexe</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date naissance</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Âge</th>
