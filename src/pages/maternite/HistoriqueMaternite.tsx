@@ -82,6 +82,14 @@ const HistoriqueMaternite: React.FC = () => {
 
     try {
       // Construire la formule obstétricale comme une chaîne
+      console.log('🔍 Valeurs formule obstétricale avant envoi:', {
+        G: filters.formuleObstetricaleG,
+        P: filters.formuleObstetricaleP,
+        EV: filters.formuleObstetricaleEV,
+        AV: filters.formuleObstetricaleAV,
+        MortNe: filters.formuleObstetricaleMortNe
+      });
+      
       const formuleObstetricaleComplete = [
         filters.formuleObstetricaleG || '0',
         filters.formuleObstetricaleP || '0',
@@ -89,6 +97,8 @@ const HistoriqueMaternite: React.FC = () => {
         filters.formuleObstetricaleAV || '0',
         filters.formuleObstetricaleMortNe || '0'
       ].join(', ');
+      
+      console.log('📝 Formule obstétricale construite:', formuleObstetricaleComplete);
 
       // Créer l'historique de maternité sans association à un patient spécifique
       const historyData = {
@@ -123,6 +133,12 @@ const HistoriqueMaternite: React.FC = () => {
         atbq: filters.atbq,
         indicationCesarienne: filters.indicationCesarienne,
         cpn: filters.cpn,
+        // Envoyer les valeurs individuelles au lieu de la formule construite
+        formuleObstetricaleG: filters.formuleObstetricaleG,
+        formuleObstetricaleP: filters.formuleObstetricaleP,
+        formuleObstetricaleEV: filters.formuleObstetricaleEV,
+        formuleObstetricaleAV: filters.formuleObstetricaleAV,
+        formuleObstetricaleMortNe: filters.formuleObstetricaleMortNe,
         formuleObstetricale: formuleObstetricaleComplete,
         ddr: filters.ddr || null,
         saignementVaginal: filters.saignementVaginal
