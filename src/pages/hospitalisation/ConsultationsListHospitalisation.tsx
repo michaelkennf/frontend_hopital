@@ -223,294 +223,222 @@ const ConsultationsListHospitalisation: React.FC = () => {
     printWindow.print();
   };
 
-  const filteredConsultations = consultations.filter(c => 
-    c.patient.folderNumber.toLowerCase().includes(search.toLowerCase()) ||
-    (c.patient.firstName || '').toLowerCase().includes(search.toLowerCase()) ||
-    (c.patient.lastName || '').toLowerCase().includes(search.toLowerCase())
-  );
+  // Remplacer le tableau par un filtrage sur la recherche
+  const filteredConsultations = consultations.filter(c => {
+    const patient = c.patient;
+    const searchText = `${patient.folderNumber} ${patient.lastName || ''} ${patient.firstName || ''}`.toLowerCase();
+    return searchText.includes(search.toLowerCase());
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Consultations - Hospitalisation</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Gestion des consultations pour les patients hospitalisés
-          </p>
-        </div>
-        <div className="flex space-x-3">
-          <button
-            onClick={handlePrintList}
-            className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
-          >
+    <div>
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-2">
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">Consultations - Hospitalisation</h1>
+          <button className="btn-secondary no-print" onClick={handlePrintList}>
+            <svg className="h-5 w-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2V7a2 2 0 012-2h16a2 2 0 012 2v9a2 2 0 01-2 2h-2m-6 0v4m0 0h4m-4 0H8" /></svg>
             Imprimer la liste
           </button>
-          <button
-            onClick={handleOpenForm}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Nouvelle consultation
-          </button>
         </div>
+        <button className="btn-primary no-print" onClick={handleOpenForm}>
+          + Nouvelle consultation
+        </button>
       </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4 text-red-700">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="bg-green-50 border border-green-200 rounded-md p-4 text-green-700">
-          {success}
-        </div>
-      )}
-
-      {/* Formulaire d'ajout */}
-      {showForm && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Nouvelle consultation</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Rechercher un patient
-              </label>
-              <input
-                type="text"
-                className="input-field mb-1"
-                placeholder="Rechercher un patient..."
-                value={patientSearch}
-                onChange={e => setPatientSearch(e.target.value)}
-              />
-              <select
-                name="patientId"
-                value={form.patientId}
-                onChange={handleChange}
-                required
-                className="input-field"
-              >
-                <option value="">Sélectionner un patient</option>
-                {patients.filter((p) => {
-                  const txt = `${p.folderNumber} ${p.lastName || ''} ${p.firstName || ''}`.toLowerCase();
-                  return txt.includes(patientSearch.toLowerCase());
-                }).map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.folderNumber} - {p.lastName?.toUpperCase() || ''} {p.firstName || ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Type de consultation
-              </label>
-              <select
-                name="consultationTypeId"
-                value={form.consultationTypeId}
-                onChange={handleChange}
-                required
-                className="input-field"
-              >
-                <option value="">Sélectionner un type</option>
-                {consultationTypes.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date
-              </label>
-              <input
-                type="date"
-                name="date"
-                value={form.date}
-                onChange={handleChange}
-                required
-                className="input-field"
-              />
-            </div>
-
-            <div className="flex space-x-3">
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Ajout en cours...' : 'Ajouter'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors"
-              >
-                Annuler
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Formulaire d'édition */}
-      {editingConsultation && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Modifier la consultation</h2>
-          <form onSubmit={handleEditSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Patient
-              </label>
-              <select
-                name="patientId"
-                value={editForm.patientId}
-                onChange={handleEditChange}
-                required
-                className="input-field"
-              >
-                <option value="">Sélectionner un patient</option>
-                {patients.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.folderNumber} - {p.lastName?.toUpperCase() || ''} {p.firstName || ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Type de consultation
-              </label>
-              <select
-                name="consultationTypeId"
-                value={editForm.consultationTypeId}
-                onChange={handleEditChange}
-                required
-                className="input-field"
-              >
-                <option value="">Sélectionner un type</option>
-                {consultationTypes.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date
-              </label>
-              <input
-                type="date"
-                name="date"
-                value={editForm.date}
-                onChange={handleEditChange}
-                required
-                className="input-field"
-              />
-            </div>
-
-            <div className="flex space-x-3">
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Modification en cours...' : 'Modifier'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditingConsultation(null)}
-                className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors"
-              >
-                Annuler
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Barre de recherche */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex items-center space-x-4">
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Rechercher par numéro de dossier, nom ou prénom..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="input-field w-full"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Liste des consultations */}
-      <div className="bg-white rounded-lg shadow overflow-hidden" ref={tableRef}>
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
-            Consultations ({filteredConsultations.length})
-          </h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  N° Dossier
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Patient
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type de Consultation
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredConsultations.map((consultation) => (
-                <tr key={consultation.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {consultation.patient.folderNumber}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {consultation.patient.firstName || ''} {consultation.patient.lastName || ''}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {consultation.consultationType.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(consultation.date).toLocaleDateString('fr-FR')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => handleEdit(consultation)}
-                      className="text-blue-600 hover:text-blue-900 mr-3"
-                    >
-                      Modifier
-                    </button>
-                  </td>
+      <input
+        type="text"
+        className="input-field mb-4"
+        placeholder="Rechercher un patient (nom ou dossier)"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+      />
+      <p className="text-gray-600 mb-6">Consultez la liste des consultations pour les patients hospitalisés.</p>
+      {error && <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">{error}</div>}
+      {success && <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4 text-green-700">{success}</div>}
+      <div className="card mb-6" ref={tableRef}>
+        {loading ? (
+          <div className="flex items-center justify-center h-24">Chargement...</div>
+        ) : filteredConsultations.length === 0 ? (
+          <div className="text-gray-500">Aucune consultation enregistrée.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 print-table">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {filteredConsultations.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            Aucune consultation trouvée
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredConsultations.map((c) => {
+                  return (
+                    <tr key={c.id}>
+                      <td className="px-4 py-2 font-mono text-sm">
+                        {c.patient.folderNumber} - {c.patient.lastName?.toUpperCase() || ''} {c.patient.firstName || ''}
+                      </td>
+                      <td className="px-4 py-2">{c.consultationType.name}</td>
+                      <td className="px-4 py-2">{new Date(c.date).toLocaleDateString('fr-FR')}</td>
+                      <td className="px-4 py-2">
+                        <button
+                          onClick={() => handleEdit(c)}
+                          className="text-blue-600 hover:text-blue-900 mr-3"
+                        >
+                          Modifier
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
+
+      {/* Formulaire modal */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-lg relative">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+              onClick={() => setShowForm(false)}
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <h2 className="text-xl font-bold mb-4">Nouvelle consultation</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Patient</label>
+                <input
+                  type="text"
+                  className="input-field mb-1"
+                  placeholder="Rechercher un patient..."
+                  value={patientSearch}
+                  onChange={e => setPatientSearch(e.target.value)}
+                />
+                <select
+                  name="patientId"
+                  value={form.patientId}
+                  onChange={handleChange}
+                  required
+                  className="input-field"
+                >
+                  <option value="">Sélectionner un patient</option>
+                  {patients.filter((p) => {
+                    const txt = `${p.folderNumber} ${p.lastName || ''} ${p.firstName || ''}`.toLowerCase();
+                    return txt.includes(patientSearch.toLowerCase());
+                  }).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.folderNumber} - {p.lastName?.toUpperCase() || ''} {p.firstName || ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Type de consultation</label>
+                <select
+                  name="consultationTypeId"
+                  value={form.consultationTypeId}
+                  onChange={handleChange}
+                  required
+                  className="input-field"
+                >
+                  <option value="">Sélectionner un type</option>
+                  {consultationTypes.map((ct) => (
+                    <option key={ct.id} value={ct.id}>
+                      {ct.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Date</label>
+                <input
+                  type="date"
+                  name="date"
+                  value={form.date}
+                  onChange={handleChange}
+                  required
+                  className="input-field"
+                />
+              </div>
+              <div className="pt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowForm(false)}
+                >
+                  Annuler
+                </button>
+                <button type="submit" className="btn-primary" disabled={loading}>
+                  {loading ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Formulaire de modification */}
+      {editingConsultation && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Modifier la consultation</h2>
+            <form onSubmit={handleEditSubmit}>
+              <div className="mb-4">
+                <label className="block mb-1">Patient</label>
+                <select
+                  name="patientId"
+                  value={editForm.patientId}
+                  onChange={handleEditChange}
+                  className="input w-full"
+                  required
+                >
+                  <option value="">Sélectionner un patient</option>
+                  {patients.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.folderNumber} - {p.lastName?.toUpperCase() || ''} {p.firstName || ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="mb-4">
+                <label className="block mb-1">Type de consultation</label>
+                <select
+                  name="consultationTypeId"
+                  value={editForm.consultationTypeId}
+                  onChange={handleEditChange}
+                  className="input w-full"
+                  required
+                >
+                  <option value="">Sélectionner un type</option>
+                  {consultationTypes.map((ct) => (
+                    <option key={ct.id} value={ct.id}>{ct.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="mb-4">
+                <label className="block mb-1">Date</label>
+                <input
+                  type="date"
+                  name="date"
+                  value={editForm.date}
+                  onChange={handleEditChange}
+                  className="input w-full"
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button type="button" className="btn-secondary" onClick={() => setEditingConsultation(null)}>Annuler</button>
+                <button type="submit" className="btn-primary">Enregistrer</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
