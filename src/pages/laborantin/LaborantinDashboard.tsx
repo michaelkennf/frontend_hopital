@@ -262,8 +262,8 @@ function PatientsExamens() {
         setAutoSelectedExam(null); // Clear auto-selected exam
       }
     })
-    .catch(() => setError('Erreur lors du chargement des examens'))
-    .finally(() => setLoading(false));
+      .catch(() => setError('Erreur lors du chargement des examens'))
+      .finally(() => setLoading(false));
   };
 
   // Ajouter un examen
@@ -296,39 +296,39 @@ function PatientsExamens() {
         // Ne pas réinitialiser setAutoSelectedExam(null) pour garder l'historique
       } else {
         // Logique pour les examens manuels (hospitalisés/maternité)
-        let examName = exam;
+      let examName = exam;
         let examTypeId = null;
         
-        if (service === 'AUTRES' && !examName) {
-          setError('Veuillez saisir le nom de l\'examen');
+      if (service === 'AUTRES' && !examName) {
+        setError('Veuillez saisir le nom de l\'examen');
+        setAddingExam(false);
+        return;
+      }
+        
+      // Créer le type d'examen à la volée si "Autres"
+      if (service === 'AUTRES') {
+        // Créer le type d'examen dans la base
+        const res = await axios.post('/api/exams/types', { name: examName, price: 0 });
+        examTypeId = res.data.examType.id;
+      } else {
+        // Chercher l'id du type d'examen existant
+        const allTypes = await axios.get('/api/exams');
+        const found = allTypes.data.examTypes.find((et: any) => et.name === examName);
+        if (!found) {
+          setError('Type d\'examen non trouvé');
           setAddingExam(false);
           return;
         }
-        
-        // Créer le type d'examen à la volée si "Autres"
-        if (service === 'AUTRES') {
-          // Créer le type d'examen dans la base
-          const res = await axios.post('/api/exams/types', { name: examName, price: 0 });
-          examTypeId = res.data.examType.id;
-        } else {
-          // Chercher l'id du type d'examen existant
-          const allTypes = await axios.get('/api/exams');
-          const found = allTypes.data.examTypes.find((et: any) => et.name === examName);
-          if (!found) {
-            setError('Type d\'examen non trouvé');
-            setAddingExam(false);
-            return;
-          }
-          examTypeId = found.id;
-        }
+        examTypeId = found.id;
+      }
         
         // Créer l'examen directement comme réalisé (pour les hospitalisés/maternité)
         const examResponse = await axios.post('/api/exams', {
-          patientId: selectedPatient.id,
-          examTypeId,
-          date: new Date().toISOString(),
-          results: result
-        });
+        patientId: selectedPatient.id,
+        examTypeId,
+        date: new Date().toISOString(),
+        results: result
+      });
         
         // Marquer immédiatement comme réalisé
         if (examResponse.data.exam) {
@@ -340,9 +340,9 @@ function PatientsExamens() {
         // Rafraîchir l'historique complet des examens
         const historyRes = await axios.get(`/api/exams/history/${selectedPatient.id}`);
         setExams(historyRes.data.exams);
-        setService('');
-        setExam('');
-        setResult('');
+      setService('');
+      setExam('');
+      setResult('');
       }
     } catch (error: any) {
       console.error('Erreur lors de l\'ajout de l\'examen:', error);
@@ -690,7 +690,7 @@ function PatientsExamens() {
                         </div>
                       );
                     })}
-                  </div>
+                      </div>
                 )}
               </div>
             </div>
