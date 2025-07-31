@@ -66,7 +66,15 @@ const PatientsManagementHospitalisation: React.FC = () => {
 
   const handleOpenForm = () => {
     setForm({
-      nom: '', postNom: '', sexe: '', dateNaissance: '', age: '', poids: '', adresse: '', telephone: '', roomType: ''
+      nom: '',
+      postNom: '',
+      sexe: '',
+      dateNaissance: '',
+      age: '',
+      poids: '',
+      adresse: '',
+      telephone: '',
+      roomType: '',
     });
     setShowForm(true);
     setError(null);
@@ -87,9 +95,9 @@ const PatientsManagementHospitalisation: React.FC = () => {
     setLoading(true);
     setError(null);
     setSuccess(null);
+
     try {
-      // 1. Créer le patient
-      const patientRes = await axios.post('/api/patients', {
+      const res = await axios.post('/api/patients', {
         firstName: form.nom,
         lastName: form.postNom,
         sexe: form.sexe,
@@ -97,20 +105,25 @@ const PatientsManagementHospitalisation: React.FC = () => {
         poids: form.poids,
         adresse: form.adresse,
         telephone: form.telephone,
+        interfaceOrigin: 'hospitalisation', // Identifier l'interface d'origine
       });
-      const patientId = patientRes.data.patient?.id || patientRes.data.id;
-      // 2. Hospitaliser immédiatement
-      await axios.post('/api/hospitalizations', {
-        patientId,
-        roomType: form.roomType,
-        days: 1, // Par défaut 1 jour, sera mis à jour à la sortie
-        price: ROOM_TYPES.find(r => r.value === form.roomType)?.price || 1,
-      });
-      setSuccess('Patient hospitalisé avec succès !');
+
+      setPatients([res.data, ...patients]);
       setShowForm(false);
-      fetchPatients();
+      setForm({
+        nom: '',
+        postNom: '',
+        sexe: '',
+        dateNaissance: '',
+        age: '',
+        poids: '',
+        adresse: '',
+        telephone: '',
+        roomType: '',
+      });
+      setSuccess('Patient enregistré avec succès');
     } catch (e: any) {
-      setError(e.response?.data?.error || 'Erreur lors de l’enregistrement du patient');
+      setError(e.response?.data?.error || 'Erreur lors de l\'enregistrement du patient');
     } finally {
       setLoading(false);
     }

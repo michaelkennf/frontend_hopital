@@ -52,7 +52,7 @@ const ConsultationsListHospitalisation: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get('/api/patients?service=hospitalisation');
+      const res = await axios.get('/api/patients?service=consultations_hospitalisation');
       setPatients(res.data.patients || []);
     } catch (e) {
       setPatients([]);

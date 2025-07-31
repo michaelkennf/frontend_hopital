@@ -81,8 +81,7 @@ const PatientsManagementMaternite: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      // 1. Créer le patient
-      const patientRes = await axios.post('/api/patients', {
+      const res = await axios.post('/api/patients', {
         firstName: form.nom,
         lastName: form.postNom,
         sexe: form.sexe,
@@ -90,8 +89,9 @@ const PatientsManagementMaternite: React.FC = () => {
         poids: form.poids,
         adresse: form.adresse,
         telephone: form.telephone,
+        interfaceOrigin: 'maternite', // Identifier l'interface d'origine
       });
-      const patientId = patientRes.data.patient?.id || patientRes.data.id;
+      const patientId = res.data.patient?.id || res.data.id;
       // 2. Hospitaliser immédiatement en maternité
       await axios.post('/api/hospitalizations', {
         patientId,

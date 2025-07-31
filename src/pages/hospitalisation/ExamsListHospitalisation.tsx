@@ -29,12 +29,8 @@ const ExamsListHospitalisation: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      // On ne prend que les patients hospitalisés (hors maternité)
-      const hospRes = await axios.get('/api/hospitalizations');
-      const hospHosp = hospRes.data.hospitalizations.filter((h: any) => h.roomType && h.roomType.toLowerCase().includes('hospitalisation'));
-      const hospPatientIds = hospHosp.map((h: any) => h.patientId);
-      const patRes = await axios.get('/api/patients');
-      setPatients((patRes.data.patients || []).filter((p: any) => hospPatientIds.includes(p.id)));
+      const res = await axios.get('/api/patients?service=examens_hospitalisation');
+      setPatients(res.data.patients || []);
     } catch (e) {
       setPatients([]);
     }
