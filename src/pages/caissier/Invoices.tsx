@@ -149,43 +149,195 @@ const Invoices: React.FC = () => {
       return;
     }
     
-    // Générer le HTML de la facture POS-80
-    const win = window.open('', '', 'width=350,height=700');
+    // Générer le HTML de la facture optimisé pour l'impression
+    const win = window.open('', '', 'width=400,height=800');
     if (win) {
       win.document.write('<html><head><title>Facture</title>');
       win.document.write(`
         <style>
           @media print {
-            body { width: 80mm !important; margin: 0; }
+            body { 
+              width: 100% !important; 
+              margin: 0 !important; 
+              padding: 10px !important;
+              font-size: 12px !important;
+              color: black !important;
+              background: white !important;
+            }
+            .facture { 
+              width: 100% !important; 
+              max-width: 80mm !important;
+              margin: 0 auto !important;
+            }
+            .facture-header { 
+              text-align: center !important; 
+              font-size: 14px !important; 
+              font-weight: bold !important; 
+              margin-bottom: 8px !important;
+              color: black !important;
+            }
+            .facture-table { 
+              width: 100% !important; 
+              border-collapse: collapse !important; 
+              font-size: 11px !important;
+              margin: 8px 0 !important;
+            }
+            .facture-table th, .facture-table td { 
+              border-bottom: 1px solid black !important; 
+              padding: 4px 2px !important; 
+              text-align: left !important;
+              color: black !important;
+            }
+            .footer { 
+              font-size: 10px !important; 
+              text-align: center !important; 
+              margin-top: 15px !important; 
+              color: black !important;
+              border-top: 1px solid black !important;
+              padding-top: 8px !important;
+            }
+            .entete-logo { 
+              height: 40px !important; 
+              margin-bottom: 5px !important;
+              display: block !important;
+              margin-left: auto !important;
+              margin-right: auto !important;
+            }
+            .entete-title { 
+              color: black !important; 
+              font-weight: bold !important; 
+              font-size: 13px !important;
+              margin: 5px 0 !important;
+            }
+            .entete-sub { 
+              color: black !important; 
+              font-weight: bold !important; 
+              font-size: 11px !important;
+              margin: 3px 0 !important;
+            }
+            .patient-info {
+              margin: 8px 0 !important;
+              font-size: 11px !important;
+              color: black !important;
+            }
+            .total-section {
+              margin-top: 10px !important;
+              text-align: right !important;
+              font-size: 12px !important;
+              font-weight: bold !important;
+              color: black !important;
+              border-top: 2px solid black !important;
+              padding-top: 5px !important;
+            }
           }
-          body { font-family: monospace, Arial, sans-serif; font-size: 10px; width: 80mm; margin: 0; }
-          .facture { width: 80mm; margin: 0 auto; }
-          .facture-header { text-align: center; font-size: 12px; font-weight: bold; margin-bottom: 4px; }
-          .facture-table { width: 100%; border-collapse: collapse; font-size: 10px; }
-          .facture-table th, .facture-table td { border-bottom: 1px dashed #ccc; padding: 2px 0; text-align: left; }
-          .footer { font-size: 9px; text-align: center; margin-top: 10px; color: #222; }
-          .entete-logo { height: 30px; margin-bottom: 2px; }
-          .entete-title { color: #009900; font-weight: bold; font-size: 11px; }
-          .entete-sub { color: #e60000; font-weight: bold; font-size: 10px; }
+          
+          body { 
+            font-family: 'Courier New', monospace, Arial, sans-serif; 
+            font-size: 12px; 
+            width: 100%; 
+            margin: 0; 
+            padding: 10px;
+            color: black;
+            background: white;
+          }
+          .facture { 
+            width: 100%; 
+            max-width: 80mm; 
+            margin: 0 auto; 
+            padding: 5px;
+          }
+          .facture-header { 
+            text-align: center; 
+            font-size: 14px; 
+            font-weight: bold; 
+            margin-bottom: 8px;
+            color: black;
+          }
+          .facture-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 11px;
+            margin: 8px 0;
+          }
+          .facture-table th, .facture-table td { 
+            border-bottom: 1px solid black; 
+            padding: 4px 2px; 
+            text-align: left;
+            color: black;
+          }
+          .facture-table th {
+            font-weight: bold;
+            background: #f0f0f0;
+          }
+          .footer { 
+            font-size: 10px; 
+            text-align: center; 
+            margin-top: 15px; 
+            color: black;
+            border-top: 1px solid black;
+            padding-top: 8px;
+          }
+          .entete-logo { 
+            height: 40px; 
+            margin-bottom: 5px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+          }
+          .entete-title { 
+            color: black; 
+            font-weight: bold; 
+            font-size: 13px;
+            margin: 5px 0;
+          }
+          .entete-sub { 
+            color: black; 
+            font-weight: bold; 
+            font-size: 11px;
+            margin: 3px 0;
+          }
+          .patient-info {
+            margin: 8px 0;
+            font-size: 11px;
+            color: black;
+          }
+          .total-section {
+            margin-top: 10px;
+            text-align: right;
+            font-size: 12px;
+            font-weight: bold;
+            color: black;
+            border-top: 2px solid black;
+            padding-top: 5px;
+          }
         </style>
       `);
       win.document.write('</head><body>');
+      
       // Entête institutionnelle
-      win.document.write('<div style="text-align:center;">');
-      win.document.write('<img src="/logo_polycliniques.jpg" class="entete-logo" alt="Logo" /><br/>');
-      win.document.write('<div style="font-size:9px;font-weight:bold;">REPUBLIQUE DEMOCRATIQUE DU CONGO<br/>PROVINCE DU SUD-KIVU<br/>VILLE DE BUKAVU<br/>ZONE DE SANTE URBAINE DE KADUTU</div>');
-      win.document.write('<div class="entete-sub">FONDATION UMOJA</div>');
-      win.document.write('<div style="font-size:10px;font-weight:bold;color:#009900;">"F.U" asbl</div>');
-      win.document.write('<div style="font-size:9px;font-weight:bold;">DEPARTEMENT DES OEUVRES MEDICALES</div>');
+      win.document.write('<div style="text-align:center;margin-bottom:10px;">');
+      win.document.write('<img src="/logo_polycliniques.jpg" class="entete-logo" alt="Logo" />');
+      win.document.write('<div class="entete-sub">REPUBLIQUE DEMOCRATIQUE DU CONGO</div>');
+      win.document.write('<div class="entete-sub">PROVINCE DU SUD-KIVU</div>');
+      win.document.write('<div class="entete-sub">VILLE DE BUKAVU</div>');
+      win.document.write('<div class="entete-sub">ZONE DE SANTE URBAINE DE KADUTU</div>');
+      win.document.write('<div class="entete-title">FONDATION UMOJA</div>');
+      win.document.write('<div class="entete-sub">"F.U" asbl</div>');
+      win.document.write('<div class="entete-sub">DEPARTEMENT DES OEUVRES MEDICALES</div>');
       win.document.write('<div class="entete-title">POLYCLINIQUE DES APOTRES</div>');
       win.document.write('</div>');
-      // Facture
+      
+      // Informations de la facture
       win.document.write('<div class="facture">');
       win.document.write('<div class="facture-header">FACTURE</div>');
-      win.document.write(`<div><b>N°:</b> ${invoice.invoiceNumber}</div>`);
-      win.document.write(`<div><b>Patient:</b> ${invoice.patient.folderNumber} - ${invoice.patient.lastName.toUpperCase()} ${invoice.patient.firstName}</div>`);
-      win.document.write(`<div><b>Date:</b> ${new Date(invoice.createdAt).toLocaleDateString('fr-FR')}</div>`);
-      win.document.write('<table class="facture-table"><thead><tr><th>Désignation</th><th>Qté</th><th>PU</th><th>Total</th></tr></thead><tbody>');
+      win.document.write(`<div class="patient-info"><strong>N°:</strong> ${invoice.invoiceNumber}</div>`);
+      win.document.write(`<div class="patient-info"><strong>Patient:</strong> ${invoice.patient.folderNumber} - ${invoice.patient.lastName.toUpperCase()} ${invoice.patient.firstName}</div>`);
+      win.document.write(`<div class="patient-info"><strong>Date:</strong> ${new Date(invoice.createdAt).toLocaleDateString('fr-FR')} ${new Date(invoice.createdAt).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}</div>`);
+      
+      // Tableau des items
+      win.document.write('<table class="facture-table">');
+      win.document.write('<thead><tr><th>Désignation</th><th>Qté</th><th>PU</th><th>Total</th></tr></thead>');
+      win.document.write('<tbody>');
       
       // Log chaque item avant de l'écrire
       invoice.items.forEach((item, index) => {
@@ -199,19 +351,24 @@ const Invoices: React.FC = () => {
       });
       
       win.document.write('</tbody></table>');
-      win.document.write(`<div style="text-align:right;font-size:11px;margin-top:4px;"><b>Total:</b> ${invoice.totalAmount.toFixed(2)} $</div>`);
+      
+      // Total
+      win.document.write(`<div class="total-section"><strong>TOTAL: ${invoice.totalAmount.toFixed(2)} $</strong></div>`);
       win.document.write('</div>');
+      
       // Bas de page institutionnel
       win.document.write('<div class="footer">');
-      win.document.write('Adresse : DRCONGO/SK/BKV/Av. BUHOZI/KAJANGU/CIRIRI<br/>');
-      win.document.write('Tél : (+243) 975 822 376, 843 066 779<br/>');
-      win.document.write('Email : polycliniquedesapotres1121@gmail.com');
+      win.document.write('<strong>Adresse:</strong> DRCONGO/SK/BKV/Av. BUHOZI/KAJANGU/CIRIRI<br/>');
+      win.document.write('<strong>Tél:</strong> (+243) 975 822 376, 843 066 779<br/>');
+      win.document.write('<strong>Email:</strong> polycliniquedesapotres1121@gmail.com');
       win.document.write('</div>');
+      
       win.document.write('</body></html>');
       win.document.close();
       win.focus();
-      setTimeout(() => win.print(), 300);
+      setTimeout(() => win.print(), 500);
     }
+    
     // Marquer la facture comme imprimée côté backend
     try {
       await axios.patch(`/api/invoices/${invoice.id}`, { printed: true });
