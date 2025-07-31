@@ -1,1 +1,1 @@
-import React from "react"; const EmployeesManagement: React.FC = () => { return <div><h1>Gestion du personnel</h1><p>Page en cours de développement...</p></div>; }; export default EmployeesManagement;
+import React from 'react'; const EmployeesManagement = () => { return <div>Gestion des employés</div>; }; export default EmployeesManagement;
