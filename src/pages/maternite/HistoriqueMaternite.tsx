@@ -33,7 +33,16 @@ const initialFilters = {
   formuleObstetricaleP: '',
   formuleObstetricaleEV: '',
   formuleObstetricaleAV: '',
-  formuleObstetricaleMortNe: ''
+  formuleObstetricaleMortNe: '',
+  // Champs pour les jumeaux
+  jumeau1Sexe: '',
+  jumeau1Poids: '',
+  jumeau2Sexe: '',
+  jumeau2Poids: '',
+  jumeau3Sexe: '',
+  jumeau3Poids: '',
+  jumeau4Sexe: '',
+  jumeau4Poids: ''
 };
 
 const HistoriqueMaternite: React.FC = () => {
@@ -49,6 +58,11 @@ const HistoriqueMaternite: React.FC = () => {
     return filters.typeAccouchement?.toLowerCase().includes('césarienne') || 
            filters.typeAccouchement?.toLowerCase().includes('cesarienne') ||
            filters.typeAccouchement?.toLowerCase().includes('cesar');
+  };
+
+  // Fonction pour vérifier si les champs jumeaux doivent être affichés
+  const shouldShowJumeauxFields = () => {
+    return filters.jumeaux === 'Oui';
   };
 
   // Charger les historiques de maternité
@@ -141,7 +155,16 @@ const HistoriqueMaternite: React.FC = () => {
         formuleObstetricaleMortNe: filters.formuleObstetricaleMortNe,
         formuleObstetricale: formuleObstetricaleComplete,
         ddr: filters.ddr || null,
-        saignementVaginal: filters.saignementVaginal
+        saignementVaginal: filters.saignementVaginal,
+        // Données des jumeaux
+        jumeau1Sexe: filters.jumeau1Sexe,
+        jumeau1Poids: filters.jumeau1Poids ? parseInt(filters.jumeau1Poids, 10) : null,
+        jumeau2Sexe: filters.jumeau2Sexe,
+        jumeau2Poids: filters.jumeau2Poids ? parseInt(filters.jumeau2Poids, 10) : null,
+        jumeau3Sexe: filters.jumeau3Sexe,
+        jumeau3Poids: filters.jumeau3Poids ? parseInt(filters.jumeau3Poids, 10) : null,
+        jumeau4Sexe: filters.jumeau4Sexe,
+        jumeau4Poids: filters.jumeau4Poids ? parseInt(filters.jumeau4Poids, 10) : null
       };
 
       console.log('Données envoyées:', historyData);
@@ -211,6 +234,15 @@ const HistoriqueMaternite: React.FC = () => {
                 <th className="border px-4 py-3 text-sm font-medium">SAIGNEMENT VAGINAL</th>
                 <th className="border px-4 py-3 text-sm"></th>
               </tr>
+              {shouldShowJumeauxFields() && (
+                <tr className="bg-blue-50">
+                  <th colSpan={2} className="border px-4 py-2 text-sm font-medium text-blue-800">JUMEAU 1</th>
+                  <th colSpan={2} className="border px-4 py-2 text-sm font-medium text-blue-800">JUMEAU 2</th>
+                  <th colSpan={2} className="border px-4 py-2 text-sm font-medium text-blue-800">JUMEAU 3</th>
+                  <th colSpan={2} className="border px-4 py-2 text-sm font-medium text-blue-800">JUMEAU 4</th>
+                  <th colSpan={shouldShowCesarienneColumn() ? 8 : 7} className="border px-4 py-2 text-sm font-medium text-blue-800">AUTRES CHAMPS</th>
+                </tr>
+              )}
               <tr>
                 <td className="border px-4 py-3">
                   <input name="numeroAnnuel" value={filters.numeroAnnuel} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="N° annuel..." type="text" />
@@ -315,12 +347,59 @@ const HistoriqueMaternite: React.FC = () => {
                     <option value="Non">Non</option>
                   </select>
                 </td>
-                <td className="border px-4 py-3 text-center">
-                  <button type="submit" className="btn-primary text-sm px-4 py-2" disabled={saving}>
+                <td className="border px-4 py-3">
+                  <button type="submit" disabled={saving} className="btn-primary w-full">
                     {saving ? 'Enregistrement...' : 'Enregistrer'}
                   </button>
                 </td>
               </tr>
+              {shouldShowJumeauxFields() && (
+                <tr className="bg-blue-50">
+                  <td className="border px-4 py-3">
+                    <select name="jumeau1Sexe" value={filters.jumeau1Sexe} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Sexe...">
+                      <option value="">Sexe</option>
+                      <option value="M">M</option>
+                      <option value="F">F</option>
+                    </select>
+                  </td>
+                  <td className="border px-4 py-3">
+                    <input name="jumeau1Poids" value={filters.jumeau1Poids} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Poids (g)..." type="number" min="0" />
+                  </td>
+                  <td className="border px-4 py-3">
+                    <select name="jumeau2Sexe" value={filters.jumeau2Sexe} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Sexe...">
+                      <option value="">Sexe</option>
+                      <option value="M">M</option>
+                      <option value="F">F</option>
+                    </select>
+                  </td>
+                  <td className="border px-4 py-3">
+                    <input name="jumeau2Poids" value={filters.jumeau2Poids} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Poids (g)..." type="number" min="0" />
+                  </td>
+                  <td className="border px-4 py-3">
+                    <select name="jumeau3Sexe" value={filters.jumeau3Sexe} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Sexe...">
+                      <option value="">Sexe</option>
+                      <option value="M">M</option>
+                      <option value="F">F</option>
+                    </select>
+                  </td>
+                  <td className="border px-4 py-3">
+                    <input name="jumeau3Poids" value={filters.jumeau3Poids} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Poids (g)..." type="number" min="0" />
+                  </td>
+                  <td className="border px-4 py-3">
+                    <select name="jumeau4Sexe" value={filters.jumeau4Sexe} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Sexe...">
+                      <option value="">Sexe</option>
+                      <option value="M">M</option>
+                      <option value="F">F</option>
+                    </select>
+                  </td>
+                  <td className="border px-4 py-3">
+                    <input name="jumeau4Poids" value={filters.jumeau4Poids} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Poids (g)..." type="number" min="0" />
+                  </td>
+                  <td colSpan={shouldShowCesarienneColumn() ? 8 : 7} className="border px-4 py-3 text-sm text-gray-500">
+                    Informations des jumeaux (optionnel)
+                  </td>
+                </tr>
+              )}
             </thead>
             <tbody>
               {loading ? (
