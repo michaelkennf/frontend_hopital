@@ -267,7 +267,7 @@ const ConsultationsListMaternite: React.FC = () => {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Patiente</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  {/* Suppression de la colonne Actions */}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -279,14 +279,7 @@ const ConsultationsListMaternite: React.FC = () => {
                       </td>
                       <td className="px-4 py-2">{c.consultationType.name}</td>
                       <td className="px-4 py-2">{new Date(c.date).toLocaleDateString('fr-FR')}</td>
-                      <td className="px-4 py-2">
-                        <button
-                          onClick={() => handleEdit(c)}
-                          className="text-pink-600 hover:text-pink-900 mr-3"
-                        >
-                          Modifier
-                        </button>
-                      </td>
+                      {/* Suppression de la colonne Actions */}
                     </tr>
                   );
                 })}
