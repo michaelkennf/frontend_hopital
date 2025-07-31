@@ -51,12 +51,9 @@ const PatientsManagementHospitalisation: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // On récupère toutes les hospitalisations hors maternité pour filtrer les patients
-      const hospRes = await axios.get('/api/hospitalizations');
-      const hospHosp = hospRes.data.hospitalizations.filter((h: any) => h.roomType && h.roomType.toLowerCase().includes('hospitalisation'));
-      const hospPatientIds = hospHosp.map((h: any) => h.patientId);
-      const patRes = await axios.get('/api/patients?service=hospitalisation');
-      setPatients((patRes.data.patients || []).filter((p: any) => hospPatientIds.includes(p.id)));
+      // Récupérer directement les patients hospitalisés (HOSP-)
+      const res = await axios.get('/api/patients?service=hospitalisation');
+      setPatients(res.data.patients || []);
     } catch (e: any) {
       setError(e.response?.data?.error || 'Erreur lors du chargement des patients hospitalisés');
     } finally {
@@ -97,7 +94,8 @@ const PatientsManagementHospitalisation: React.FC = () => {
     setSuccess(null);
 
     try {
-      const res = await axios.post('/api/patients', {
+      // 1. Créer le patient
+      const patientRes = await axios.post('/api/patients', {
         firstName: form.nom,
         lastName: form.postNom,
         sexe: form.sexe,
@@ -107,8 +105,20 @@ const PatientsManagementHospitalisation: React.FC = () => {
         telephone: form.telephone,
         interfaceOrigin: 'hospitalisation', // Identifier l'interface d'origine
       });
+      
+      const patientId = patientRes.data.id;
+      
+      // 2. Hospitaliser immédiatement le patient
+      await axios.post('/api/hospitalizations', {
+        patientId: patientId,
+        roomType: form.roomType || 'Hospitalisation standard',
+        days: 1, // Par défaut 1 jour
+        price: 50000, // Prix par défaut
+      });
 
-      setPatients([res.data, ...patients]);
+      // 3. Recharger la liste des patients
+      await fetchPatients();
+      
       setShowForm(false);
       setForm({
         nom: '',
@@ -121,7 +131,7 @@ const PatientsManagementHospitalisation: React.FC = () => {
         telephone: '',
         roomType: '',
       });
-      setSuccess('Patient enregistré avec succès');
+      setSuccess('Patient hospitalisé avec succès !');
     } catch (e: any) {
       setError(e.response?.data?.error || 'Erreur lors de l\'enregistrement du patient');
     } finally {
