@@ -2,35 +2,26 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
 interface MaternityStats {
-  totalPatients: number;
-  todayPatients: number;
-  lastMonthPatients: number;
-  totalHospitalizations: number;
-  todayHospitalizations: number;
-  lastMonthHospitalizations: number;
-  totalHistory: number;
-  todayHistory: number;
-  lastMonthHistory: number;
+  total: number;
+  today: number;
+  month: number;
   loading: boolean;
+  error: string | null;
 }
 
 const MaterniteOverview: React.FC = () => {
   const [stats, setStats] = useState<MaternityStats>({
-    totalPatients: 0,
-    todayPatients: 0,
-    lastMonthPatients: 0,
-    totalHospitalizations: 0,
-    todayHospitalizations: 0,
-    lastMonthHospitalizations: 0,
-    totalHistory: 0,
-    todayHistory: 0,
-    lastMonthHistory: 0,
-    loading: true
+    total: 0,
+    today: 0,
+    month: 0,
+    loading: true,
+    error: null
   });
 
   useEffect(() => {
+    setStats(s => ({ ...s, loading: true, error: null }));
+    
     const fetchStats = async () => {
-      setStats(prev => ({ ...prev, loading: true }));
       try {
         // Récupérer les patients maternité
         const patientsRes = await axios.get('/api/patients?service=maternite');
@@ -46,179 +37,142 @@ const MaterniteOverview: React.FC = () => {
         const historyRes = await axios.get('/api/maternity-history');
         const history = historyRes.data.histories || [];
 
-        // Calculer les dates
-        const today = new Date();
-        const todayStr = today.toISOString().slice(0, 10);
-        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        const lastMonthStr = lastMonth.toISOString().slice(0, 7); // YYYY-MM
+        // Calculer les statistiques
+        const now = new Date();
+        const todayStr = now.toISOString().slice(0, 10);
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
 
-        // Filtrer par date
-        const todayPatients = patients.filter((p: any) => {
-          if (!p.createdAt) return false;
-          return p.createdAt.slice(0, 10) === todayStr;
-        });
+        // Statistiques des patients
+        const totalPatients = patients.length;
+        const todayPatients = patients.filter((p: any) => 
+          (p.createdAt || '').slice(0, 10) === todayStr
+        ).length;
+        const monthPatients = patients.filter((p: any) => {
+          const created = new Date(p.createdAt);
+          return created >= lastMonth && created <= now;
+        }).length;
 
-        const lastMonthPatients = patients.filter((p: any) => {
-          if (!p.createdAt) return false;
-          return p.createdAt.slice(0, 7) === lastMonthStr;
-        });
+        // Statistiques des hospitalisations
+        const totalHospitalizations = hospitalizations.length;
+        const todayHospitalizations = hospitalizations.filter((h: any) => 
+          (h.startDate || '').slice(0, 10) === todayStr
+        ).length;
+        const monthHospitalizations = hospitalizations.filter((h: any) => {
+          const startDate = new Date(h.startDate);
+          return startDate >= lastMonth && startDate <= now;
+        }).length;
 
-        const todayHospitalizations = hospitalizations.filter((h: any) => {
-          if (!h.startDate) return false;
-          return h.startDate.slice(0, 10) === todayStr;
-        });
+        // Statistiques de l'historique
+        const totalHistory = history.length;
+        const todayHistory = history.filter((h: any) => 
+          (h.entryDate || '').slice(0, 10) === todayStr
+        ).length;
+        const monthHistory = history.filter((h: any) => {
+          const entryDate = new Date(h.entryDate);
+          return entryDate >= lastMonth && entryDate <= now;
+        }).length;
 
-        const lastMonthHospitalizations = hospitalizations.filter((h: any) => {
-          if (!h.startDate) return false;
-          return h.startDate.slice(0, 7) === lastMonthStr;
-        });
-
-        const todayHistory = history.filter((h: any) => {
-          if (!h.entryDate) return false;
-          return h.entryDate.slice(0, 10) === todayStr;
-        });
-
-        const lastMonthHistory = history.filter((h: any) => {
-          if (!h.entryDate) return false;
-          return h.entryDate.slice(0, 7) === lastMonthStr;
-        });
-
+        // Utiliser les statistiques des patients comme statistiques principales
         setStats({
-          totalPatients: patients.length,
-          todayPatients: todayPatients.length,
-          lastMonthPatients: lastMonthPatients.length,
-          totalHospitalizations: hospitalizations.length,
-          todayHospitalizations: todayHospitalizations.length,
-          lastMonthHospitalizations: lastMonthHospitalizations.length,
-          totalHistory: history.length,
-          todayHistory: todayHistory.length,
-          lastMonthHistory: lastMonthHistory.length,
-          loading: false
+          total: totalPatients,
+          today: todayPatients,
+          month: monthPatients,
+          loading: false,
+          error: null
         });
+
       } catch (error) {
         console.error('Erreur lors du chargement des statistiques:', error);
-        setStats(prev => ({ ...prev, loading: false }));
+        setStats({
+          total: 0,
+          today: 0,
+          month: 0,
+          loading: false,
+          error: 'Erreur lors du chargement des statistiques'
+        });
       }
     };
 
     fetchStats();
   }, []);
 
-  if (stats.loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement des statistiques...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Vue d'ensemble Maternité</h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Statistiques complètes de la maternité - {new Date().toLocaleDateString('fr-FR')}
+        <h1 className="text-2xl font-bold text-gray-900">Vue d'ensemble - Maternité</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Tableau de bord de la maternité de la Polyclinique des Apôtres
         </p>
       </div>
-
-      {/* Statistiques des patients */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">📊 Patients Maternité</h2>
+      
+      {stats.error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">
+          {stats.error}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-pink-600">{stats.totalPatients}</div>
-            <div className="text-sm text-gray-500 mt-1">Total patients</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">{stats.todayPatients}</div>
-            <div className="text-sm text-gray-500 mt-1">Aujourd'hui</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600">{stats.lastMonthPatients}</div>
-            <div className="text-sm text-gray-500 mt-1">Mois passé</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Statistiques des hospitalisations */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">🏥 Hospitalisations</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600">{stats.totalHospitalizations}</div>
-            <div className="text-sm text-gray-500 mt-1">Total hospitalisations</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">{stats.todayHospitalizations}</div>
-            <div className="text-sm text-gray-500 mt-1">Aujourd'hui</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600">{stats.lastMonthHospitalizations}</div>
-            <div className="text-sm text-gray-500 mt-1">Mois passé</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Statistiques de l'historique */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">📋 Historique Maternité</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-orange-600">{stats.totalHistory}</div>
-            <div className="text-sm text-gray-500 mt-1">Total entrées</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">{stats.todayHistory}</div>
-            <div className="text-sm text-gray-500 mt-1">Aujourd'hui</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600">{stats.lastMonthHistory}</div>
-            <div className="text-sm text-gray-500 mt-1">Mois passé</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Résumé rapide */}
-      <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">📈 Résumé du jour</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-8 w-8 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Nouveaux patients</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.todayPatients}</p>
+      )}
+      
+      {stats.loading ? (
+        <div className="text-center py-8">Chargement...</div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Patients total */}
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-6 w-6 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Patientes total</dt>
+                    <dd className="text-lg font-medium text-gray-900">{stats.total}</dd>
+                  </dl>
+                </div>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-8 w-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
+
+          {/* Patients du jour */}
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-6 w-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Patientes du jour</dt>
+                    <dd className="text-lg font-medium text-gray-900">{stats.today}</dd>
+                  </dl>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Nouvelles hospitalisations</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.todayHospitalizations}</p>
+            </div>
+          </div>
+
+          {/* Patients du dernier mois */}
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-6 w-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                  </svg>
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Patientes du dernier mois</dt>
+                    <dd className="text-lg font-medium text-gray-900">{stats.month}</dd>
+                  </dl>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
