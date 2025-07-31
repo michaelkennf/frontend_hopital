@@ -143,7 +143,7 @@ const RoomTypesManagement: React.FC = () => {
         />
         <input
           className="input-field"
-          placeholder="Prix par jour (FC)"
+          placeholder="Prix par jour ($)"
           type="number"
           min="0"
           step="0.01"
@@ -173,7 +173,7 @@ const RoomTypesManagement: React.FC = () => {
           <thead>
             <tr className="bg-gray-100">
               <th className="p-2">Nom</th>
-              <th className="p-2">Prix (FC)</th>
+              <th className="p-2">Prix ($)</th>
               <th className="p-2">Description</th>
               <th className="p-2">Actions</th>
             </tr>
@@ -182,7 +182,7 @@ const RoomTypesManagement: React.FC = () => {
             {roomTypes.map(roomType => (
               <tr key={roomType.id} className="border-b">
                 <td className="p-2 font-medium">{roomType.name}</td>
-                <td className="p-2">{roomType.price.toLocaleString()}</td>
+                <td className="p-2">${roomType.price.toFixed(2)}</td>
                 <td className="p-2">{roomType.description || '-'}</td>
                 <td className="p-2 flex gap-2">
                   <button
@@ -250,7 +250,7 @@ const RoomTypesManagement: React.FC = () => {
               />
               <input
                 className="input-field"
-                placeholder="Prix par jour (FC)"
+                placeholder="Prix par jour ($)"
                 type="number"
                 min="0"
                 step="0.01"

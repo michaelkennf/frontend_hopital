@@ -295,7 +295,7 @@ const PatientsManagementHospitalisation: React.FC = () => {
                   >
                     <option value="">Sélectionner</option>
                     {roomTypes.filter(rt => rt.name.toLowerCase().includes(roomTypeSearch.toLowerCase())).map(rt => (
-                      <option key={rt.id} value={rt.id}>{rt.name} - {rt.price.toLocaleString()} FC</option>
+                      <option key={rt.id} value={rt.id}>{rt.name} - ${rt.price.toFixed(2)}</option>
                     ))}
                   </select>
                 </div>
