@@ -62,6 +62,10 @@ const HistoriqueMaternite: React.FC = () => {
 
   // Fonction pour vérifier si les champs jumeaux doivent être affichés
   const shouldShowJumeauxFields = () => {
+    console.log('🔍 Vérification jumeaux:', {
+      jumeaux: filters.jumeaux,
+      resultat: filters.jumeaux === 'Oui'
+    });
     return filters.jumeaux === 'Oui';
   };
 
@@ -85,7 +89,17 @@ const HistoriqueMaternite: React.FC = () => {
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFilters({ ...filters, [e.target.name]: e.target.value });
+    const newFilters = { ...filters, [e.target.name]: e.target.value };
+    setFilters(newFilters);
+    
+    // Log pour déboguer les changements de jumeaux
+    if (e.target.name === 'jumeaux') {
+      console.log('🔄 Changement jumeaux:', {
+        nouvelleValeur: e.target.value,
+        ancienneValeur: filters.jumeaux,
+        shouldShow: e.target.value === 'Oui'
+      });
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -356,7 +370,7 @@ const HistoriqueMaternite: React.FC = () => {
               {shouldShowJumeauxFields() && (
                 <tr className="bg-blue-50">
                   <td className="border px-4 py-3">
-                    <select name="jumeau1Sexe" value={filters.jumeau1Sexe} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Sexe...">
+                    <select name="jumeau1Sexe" value={filters.jumeau1Sexe} onChange={handleChange} className="input-field w-full text-sm p-2">
                       <option value="">Sexe</option>
                       <option value="M">M</option>
                       <option value="F">F</option>
@@ -366,7 +380,7 @@ const HistoriqueMaternite: React.FC = () => {
                     <input name="jumeau1Poids" value={filters.jumeau1Poids} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Poids (g)..." type="number" min="0" />
                   </td>
                   <td className="border px-4 py-3">
-                    <select name="jumeau2Sexe" value={filters.jumeau2Sexe} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Sexe...">
+                    <select name="jumeau2Sexe" value={filters.jumeau2Sexe} onChange={handleChange} className="input-field w-full text-sm p-2">
                       <option value="">Sexe</option>
                       <option value="M">M</option>
                       <option value="F">F</option>
@@ -376,7 +390,7 @@ const HistoriqueMaternite: React.FC = () => {
                     <input name="jumeau2Poids" value={filters.jumeau2Poids} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Poids (g)..." type="number" min="0" />
                   </td>
                   <td className="border px-4 py-3">
-                    <select name="jumeau3Sexe" value={filters.jumeau3Sexe} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Sexe...">
+                    <select name="jumeau3Sexe" value={filters.jumeau3Sexe} onChange={handleChange} className="input-field w-full text-sm p-2">
                       <option value="">Sexe</option>
                       <option value="M">M</option>
                       <option value="F">F</option>
@@ -386,7 +400,7 @@ const HistoriqueMaternite: React.FC = () => {
                     <input name="jumeau3Poids" value={filters.jumeau3Poids} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Poids (g)..." type="number" min="0" />
                   </td>
                   <td className="border px-4 py-3">
-                    <select name="jumeau4Sexe" value={filters.jumeau4Sexe} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Sexe...">
+                    <select name="jumeau4Sexe" value={filters.jumeau4Sexe} onChange={handleChange} className="input-field w-full text-sm p-2">
                       <option value="">Sexe</option>
                       <option value="M">M</option>
                       <option value="F">F</option>
