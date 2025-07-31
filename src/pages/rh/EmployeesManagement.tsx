@@ -7,6 +7,7 @@ interface Employee {
   id: number;
   firstName: string;
   lastName: string;
+  postNom: string;
   address: string;
   dateOfBirth: string;
   maritalStatus: string;
@@ -20,6 +21,7 @@ interface Employee {
 const emptyEmployee: Partial<Employee> = {
   firstName: '',
   lastName: '',
+  postNom: '',
   address: '',
   dateOfBirth: '',
   maritalStatus: '',
