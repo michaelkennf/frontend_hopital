@@ -42,10 +42,21 @@ const PatientsManagementHospitalisation: React.FC = () => {
   const [editError, setEditError] = useState<string | null>(null);
   const [editSuccess, setEditSuccess] = useState<string | null>(null);
   const [roomTypeSearch, setRoomTypeSearch] = useState('');
+  const [roomTypes, setRoomTypes] = useState<any[]>([]);
 
   useEffect(() => {
     fetchPatients();
+    fetchRoomTypes();
   }, []);
+
+  const fetchRoomTypes = async () => {
+    try {
+      const res = await axios.get('/api/room-types');
+      setRoomTypes(res.data.roomTypes || []);
+    } catch (e) {
+      setRoomTypes([]);
+    }
+  };
 
   const fetchPatients = async () => {
     setLoading(true);
@@ -109,11 +120,12 @@ const PatientsManagementHospitalisation: React.FC = () => {
       const patientId = patientRes.data.id;
       
       // 2. Hospitaliser immédiatement le patient
+      const selectedRoomType = roomTypes.find(rt => rt.id.toString() === form.roomType);
       await axios.post('/api/hospitalizations', {
         patientId: patientId,
-        roomType: form.roomType || 'Hospitalisation standard',
+        roomTypeId: parseInt(form.roomType),
         days: 1, // Par défaut 1 jour
-        price: 50000, // Prix par défaut
+        price: selectedRoomType ? selectedRoomType.price : 50000, // Prix du type de chambre ou par défaut
       });
 
       // 3. Recharger la liste des patients
@@ -282,8 +294,8 @@ const PatientsManagementHospitalisation: React.FC = () => {
                     className="input-field"
                   >
                     <option value="">Sélectionner</option>
-                    {ROOM_TYPES.filter(rt => rt.label.toLowerCase().includes(roomTypeSearch.toLowerCase())).map(rt => (
-                      <option key={rt.value} value={rt.value}>{rt.label}</option>
+                    {roomTypes.filter(rt => rt.name.toLowerCase().includes(roomTypeSearch.toLowerCase())).map(rt => (
+                      <option key={rt.id} value={rt.id}>{rt.name} - {rt.price.toLocaleString()} FC</option>
                     ))}
                   </select>
                 </div>
@@ -401,8 +413,8 @@ const PatientsManagementHospitalisation: React.FC = () => {
                     className="input-field"
                   >
                     <option value="">Sélectionner</option>
-                    {ROOM_TYPES.filter(rt => rt.label.toLowerCase().includes(roomTypeSearch.toLowerCase())).map(rt => (
-                      <option key={rt.value} value={rt.value}>{rt.label}</option>
+                    {roomTypes.filter(rt => rt.name.toLowerCase().includes(roomTypeSearch.toLowerCase())).map(rt => (
+                      <option key={rt.id} value={rt.id}>{rt.name} - {rt.price.toLocaleString()} FC</option>
                     ))}
                   </select>
                 </div>
