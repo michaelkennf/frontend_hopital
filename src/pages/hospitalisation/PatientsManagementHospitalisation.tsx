@@ -55,7 +55,7 @@ const PatientsManagementHospitalisation: React.FC = () => {
       const hospRes = await axios.get('/api/hospitalizations');
       const hospHosp = hospRes.data.hospitalizations.filter((h: any) => h.roomType && h.roomType.toLowerCase().includes('hospitalisation'));
       const hospPatientIds = hospHosp.map((h: any) => h.patientId);
-      const patRes = await axios.get('/api/patients');
+      const patRes = await axios.get('/api/patients?service=hospitalisation');
       setPatients((patRes.data.patients || []).filter((p: any) => hospPatientIds.includes(p.id)));
     } catch (e: any) {
       setError(e.response?.data?.error || 'Erreur lors du chargement des patients hospitalisés');
