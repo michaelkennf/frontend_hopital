@@ -144,6 +144,13 @@ const PatientsManagementHospitalisation: React.FC = () => {
         roomType: '',
       });
       setSuccess('Patient hospitalisé avec succès !');
+      
+      // 4. Rafraîchir la page hospitalisation si elle est ouverte
+      // On va émettre un événement personnalisé pour notifier les autres composants
+      window.dispatchEvent(new CustomEvent('patientHospitalized', { 
+        detail: { patientId, roomTypeId: parseInt(form.roomType) } 
+      }));
+      
     } catch (e: any) {
       setError(e.response?.data?.error || 'Erreur lors de l\'enregistrement du patient');
     } finally {
