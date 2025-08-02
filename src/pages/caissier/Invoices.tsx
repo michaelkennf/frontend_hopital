@@ -160,7 +160,7 @@ const Invoices: React.FC = () => {
               width: 100% !important; 
               margin: 0 !important; 
               padding: 10px !important;
-              font-size: 12px !important;
+              font-size: 16px !important; font-weight: bold !important;
               color: black !important;
               background: white !important;
             }
@@ -171,7 +171,7 @@ const Invoices: React.FC = () => {
             }
             .facture-header { 
               text-align: center !important; 
-              font-size: 14px !important; 
+              font-size: 16px !important; 
               font-weight: bold !important; 
               margin-bottom: 8px !important;
               color: black !important;
@@ -179,7 +179,7 @@ const Invoices: React.FC = () => {
             .facture-table { 
               width: 100% !important; 
               border-collapse: collapse !important; 
-              font-size: 11px !important;
+              font-size: 15px !important; font-weight: bold !important;
               margin: 8px 0 !important;
             }
             .facture-table th, .facture-table td { 
@@ -189,7 +189,7 @@ const Invoices: React.FC = () => {
               color: black !important;
             }
             .footer { 
-              font-size: 10px !important; 
+              font-size: 12px !important; font-weight: bold !important; 
               text-align: center !important; 
               margin-top: 15px !important; 
               color: black !important;
@@ -206,24 +206,24 @@ const Invoices: React.FC = () => {
             .entete-title { 
               color: black !important; 
               font-weight: bold !important; 
-              font-size: 13px !important;
+              font-size: 15px !important;
               margin: 5px 0 !important;
             }
             .entete-sub { 
               color: black !important; 
               font-weight: bold !important; 
-              font-size: 11px !important;
+              font-size: 15px !important; font-weight: bold !important;
               margin: 3px 0 !important;
             }
             .patient-info {
               margin: 8px 0 !important;
-              font-size: 11px !important;
+              font-size: 15px !important; font-weight: bold !important;
               color: black !important;
             }
             .total-section {
               margin-top: 10px !important;
               text-align: right !important;
-              font-size: 12px !important;
+              font-size: 16px !important; font-weight: bold !important;
               font-weight: bold !important;
               color: black !important;
               border-top: 2px solid black !important;
@@ -233,7 +233,7 @@ const Invoices: React.FC = () => {
           
           body { 
             font-family: 'Courier New', monospace, Arial, sans-serif; 
-            font-size: 12px; 
+            font-size: 16px; font-weight: bold; 
             width: 100%; 
             margin: 0; 
             padding: 10px;
@@ -248,7 +248,7 @@ const Invoices: React.FC = () => {
           }
           .facture-header { 
             text-align: center; 
-            font-size: 14px; 
+            font-size: 16px; 
             font-weight: bold; 
             margin-bottom: 8px;
             color: black;
@@ -256,7 +256,7 @@ const Invoices: React.FC = () => {
           .facture-table { 
             width: 100%; 
             border-collapse: collapse; 
-            font-size: 11px;
+            font-size: 15px; font-weight: bold;
             margin: 8px 0;
           }
           .facture-table th, .facture-table td { 
@@ -270,7 +270,7 @@ const Invoices: React.FC = () => {
             background: #f0f0f0;
           }
           .footer { 
-            font-size: 10px; 
+            font-size: 12px; font-weight: bold; 
             text-align: center; 
             margin-top: 15px; 
             color: black;
@@ -287,24 +287,24 @@ const Invoices: React.FC = () => {
           .entete-title { 
             color: black; 
             font-weight: bold; 
-            font-size: 13px;
+            font-size: 15px;
             margin: 5px 0;
           }
           .entete-sub { 
             color: black; 
             font-weight: bold; 
-            font-size: 11px;
+            font-size: 15px; font-weight: bold;
             margin: 3px 0;
           }
           .patient-info {
             margin: 8px 0;
-            font-size: 11px;
+            font-size: 15px; font-weight: bold;
             color: black;
           }
           .total-section {
             margin-top: 10px;
             text-align: right;
-            font-size: 12px;
+            font-size: 16px; font-weight: bold;
             font-weight: bold;
             color: black;
             border-top: 2px solid black;
@@ -317,13 +317,13 @@ const Invoices: React.FC = () => {
       // Entête institutionnelle
       win.document.write('<div style="text-align:center;margin-bottom:10px;">');
       win.document.write('<img src="/logo_polycliniques.jpg" class="entete-logo" alt="Logo" />');
-      win.document.write('<div class="entete-sub">REPUBLIQUE DEMOCRATIQUE DU CONGO</div>');
-      win.document.write('<div class="entete-sub">PROVINCE DU SUD-KIVU</div>');
-      win.document.write('<div class="entete-sub">VILLE DE BUKAVU</div>');
-      win.document.write('<div class="entete-sub">ZONE DE SANTE URBAINE DE KADUTU</div>');
-      win.document.write('<div class="entete-title">FONDATION UMOJA</div>');
-      win.document.write('<div class="entete-sub">"F.U" asbl</div>');
-      win.document.write('<div class="entete-sub">DEPARTEMENT DES OEUVRES MEDICALES</div>');
+      
+      
+      
+      
+      
+      
+      
       win.document.write('<div class="entete-title">POLYCLINIQUE DES APOTRES</div>');
       win.document.write('</div>');
       
