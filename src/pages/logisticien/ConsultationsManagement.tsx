@@ -248,3 +248,4 @@ const ConsultationsManagement: React.FC = () => {
 };
 
 export default ConsultationsManagement; 
+

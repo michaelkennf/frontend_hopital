@@ -286,7 +286,7 @@ const ConsultationsList: React.FC = () => {
       win.document.write(`<tr><td><b>Patient</b></td><td>${consultation.patient.folderNumber}</td></tr>`);
       win.document.write(`<tr><td><b>Type</b></td><td>${consultation.consultationType.name}</td></tr>`);
       win.document.write(`<tr><td><b>Date</b></td><td>${new Date(consultation.date).toLocaleDateString('fr-FR')}</td></tr>`);
-      win.document.write(`<tr><td><b>Prix</b></td><td>${consultation.consultationType.price} $</td></tr>`);
+      win.document.write(`<tr><td><b>Prix</b></td><td>${consultation.consultationType.price.toLocaleString()} FC</td></tr>`);
       win.document.write('</tbody></table>');
       win.document.write('</div>');
       // Bas de page institutionnel
@@ -359,7 +359,7 @@ const ConsultationsList: React.FC = () => {
                       </td>
                       <td className="px-4 py-2">{c.consultationType.name}</td>
                       <td className="px-4 py-2">{new Date(c.date).toLocaleDateString('fr-FR')}</td>
-                      <td className="px-4 py-2">{c.consultationType.price} $</td>
+                      <td className="px-4 py-2">{c.consultationType.price.toLocaleString()} FC</td>
                       {/* Suppression de la colonne Actions */}
                     </tr>
                   );
@@ -423,7 +423,7 @@ const ConsultationsList: React.FC = () => {
                   <option value="">Sélectionner un type</option>
                   {consultationTypes.map((ct) => (
                     <option key={ct.id} value={ct.id}>
-                      {ct.name} ({ct.price} $)
+                      {ct.name} ({ct.price.toLocaleString()} FC)
                     </option>
                   ))}
                 </select>

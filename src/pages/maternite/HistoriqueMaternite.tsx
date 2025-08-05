@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Instance axios séparée pour les routes maternité sans authentification
 const maternityAxios = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://backend-hopital-8098.onrender.com'
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 });
 
 const initialFilters = {
@@ -37,12 +37,24 @@ const initialFilters = {
   // Champs pour les jumeaux
   jumeau1Sexe: '',
   jumeau1Poids: '',
+  jumeau1Apgar1: '',
+  jumeau1Apgar2: '',
+  jumeau1Apgar3: '',
   jumeau2Sexe: '',
   jumeau2Poids: '',
+  jumeau2Apgar1: '',
+  jumeau2Apgar2: '',
+  jumeau2Apgar3: '',
   jumeau3Sexe: '',
   jumeau3Poids: '',
+  jumeau3Apgar1: '',
+  jumeau3Apgar2: '',
+  jumeau3Apgar3: '',
   jumeau4Sexe: '',
-  jumeau4Poids: ''
+  jumeau4Poids: '',
+  jumeau4Apgar1: '',
+  jumeau4Apgar2: '',
+  jumeau4Apgar3: ''
 };
 
 const HistoriqueMaternite: React.FC = () => {
@@ -107,96 +119,13 @@ const HistoriqueMaternite: React.FC = () => {
     setSaving(true);
     setError(null);
     setSuccess(null);
-
+    
     try {
-      // Construire la formule obstétricale comme une chaîne
-      console.log('🔍 Valeurs formule obstétricale avant envoi:', {
-        G: filters.formuleObstetricaleG,
-        P: filters.formuleObstetricaleP,
-        EV: filters.formuleObstetricaleEV,
-        AV: filters.formuleObstetricaleAV,
-        MortNe: filters.formuleObstetricaleMortNe
-      });
-      
-      const formuleObstetricaleComplete = [
-        filters.formuleObstetricaleG || '0',
-        filters.formuleObstetricaleP || '0',
-        filters.formuleObstetricaleEV || '0',
-        filters.formuleObstetricaleAV || '0',
-        filters.formuleObstetricaleMortNe || '0'
-      ].join(', ');
-      
-      console.log('📝 Formule obstétricale construite:', formuleObstetricaleComplete);
-
-      // Créer l'historique de maternité sans association à un patient spécifique
-      const historyData = {
-        // Ne pas envoyer patientId pour laisser le backend créer un patient automatiquement
-        patientName: filters.nomPostNomPrenom,
-        gender: 'F',
-        age: filters.age ? parseInt(filters.age, 10) : 25,
-        weight: null,
-        address: filters.adresse,
-        profession: '',
-        maritalStatus: '',
-        service: 'Maternité',
-        entryDate: new Date().toISOString().slice(0, 10),
-        entryTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-        exitDate: null,
-        treatment: '',
-        notes: '',
-        // Champs spécifiques à la maternité
-        numeroAnnuel: filters.numeroAnnuel,
-        numeroMensuel: filters.numeroMensuel,
-        postNom: filters.nomPostNomPrenom.split(' ').slice(-1)[0] || '',
-        typeAccouchement: filters.typeAccouchement,
-        jumeaux: filters.jumeaux,
-        dateAccouchement: filters.dateAccouchement || null,
-        heureAccouchement: filters.heureAccouchement,
-        sexeNouveauNe: filters.sexeNouveauNe,
-        poidsGrammes: filters.poidsGrammes ? parseInt(filters.poidsGrammes, 10) : null,
-        apgar1: filters.apgar1,
-        apgar2: filters.apgar2,
-        apgar3: filters.apgar3,
-        reanimation: filters.reanimation,
-        atbq: filters.atbq,
-        indicationCesarienne: filters.indicationCesarienne,
-        cpn: filters.cpn,
-        // Envoyer les valeurs individuelles au lieu de la formule construite
-        formuleObstetricaleG: filters.formuleObstetricaleG,
-        formuleObstetricaleP: filters.formuleObstetricaleP,
-        formuleObstetricaleEV: filters.formuleObstetricaleEV,
-        formuleObstetricaleAV: filters.formuleObstetricaleAV,
-        formuleObstetricaleMortNe: filters.formuleObstetricaleMortNe,
-        formuleObstetricale: formuleObstetricaleComplete,
-        ddr: filters.ddr || null,
-        saignementVaginal: filters.saignementVaginal,
-        // Données des jumeaux
-        jumeau1Sexe: filters.jumeau1Sexe,
-        jumeau1Poids: filters.jumeau1Poids ? parseInt(filters.jumeau1Poids, 10) : null,
-        jumeau2Sexe: filters.jumeau2Sexe,
-        jumeau2Poids: filters.jumeau2Poids ? parseInt(filters.jumeau2Poids, 10) : null,
-        jumeau3Sexe: filters.jumeau3Sexe,
-        jumeau3Poids: filters.jumeau3Poids ? parseInt(filters.jumeau3Poids, 10) : null,
-        jumeau4Sexe: filters.jumeau4Sexe,
-        jumeau4Poids: filters.jumeau4Poids ? parseInt(filters.jumeau4Poids, 10) : null
-      };
-
-      console.log('Données envoyées:', historyData);
-
-      const response = await maternityAxios.post('/api/maternity-history', historyData);
-      
-      console.log('Réponse du serveur:', response.data);
-      
+      const response = await maternityAxios.post('/api/maternity-history', filters);
       setSuccess('Historique de maternité enregistré avec succès !');
-      
-      // Réinitialiser le formulaire
       setFilters(initialFilters);
-      
-      // Recharger les données
-      await fetchMaternites();
-      
+      fetchMaternites();
     } catch (error: any) {
-      console.error('Erreur lors de l\'enregistrement:', error);
       console.error('Détails de l\'erreur:', error.response?.data);
       setError(error.response?.data?.error || error.response?.data?.details || 'Erreur lors de l\'enregistrement de l\'historique');
     } finally {
@@ -250,11 +179,11 @@ const HistoriqueMaternite: React.FC = () => {
               </tr>
               {shouldShowJumeauxFields() && (
                 <tr className="bg-blue-50">
-                  <th colSpan={2} className="border px-4 py-2 text-sm font-medium text-blue-800">JUMEAU 1</th>
-                  <th colSpan={2} className="border px-4 py-2 text-sm font-medium text-blue-800">JUMEAU 2</th>
-                  <th colSpan={2} className="border px-4 py-2 text-sm font-medium text-blue-800">JUMEAU 3</th>
-                  <th colSpan={2} className="border px-4 py-2 text-sm font-medium text-blue-800">JUMEAU 4</th>
-                  <th colSpan={shouldShowCesarienneColumn() ? 8 : 7} className="border px-4 py-2 text-sm font-medium text-blue-800">AUTRES CHAMPS</th>
+                  <th colSpan={3} className="border px-4 py-2 text-sm font-medium text-blue-800">JUMEAU 1</th>
+                  <th colSpan={3} className="border px-4 py-2 text-sm font-medium text-blue-800">JUMEAU 2</th>
+                  <th colSpan={3} className="border px-4 py-2 text-sm font-medium text-blue-800">JUMEAU 3</th>
+                  <th colSpan={3} className="border px-4 py-2 text-sm font-medium text-blue-800">JUMEAU 4</th>
+                  <th colSpan={shouldShowCesarienneColumn() ? 5 : 4} className="border px-4 py-2 text-sm font-medium text-blue-800">AUTRES CHAMPS</th>
                 </tr>
               )}
               <tr>
@@ -369,6 +298,7 @@ const HistoriqueMaternite: React.FC = () => {
               </tr>
               {shouldShowJumeauxFields() && (
                 <tr className="bg-blue-50">
+                  {/* Jumeau 1 */}
                   <td className="border px-4 py-3">
                     <select name="jumeau1Sexe" value={filters.jumeau1Sexe} onChange={handleChange} className="input-field w-full text-sm p-2">
                       <option value="">Sexe</option>
@@ -380,6 +310,16 @@ const HistoriqueMaternite: React.FC = () => {
                     <input name="jumeau1Poids" value={filters.jumeau1Poids} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Poids (g)..." type="number" min="0" />
                   </td>
                   <td className="border px-4 py-3">
+                    <div className="flex items-center space-x-1">
+                      <input name="jumeau1Apgar1" value={filters.jumeau1Apgar1} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="1" type="number" min="0" max="10" />
+                      <span className="text-gray-500 text-xs">/</span>
+                      <input name="jumeau1Apgar2" value={filters.jumeau1Apgar2} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="2" type="number" min="0" max="10" />
+                      <span className="text-gray-500 text-xs">/</span>
+                      <input name="jumeau1Apgar3" value={filters.jumeau1Apgar3} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="3" type="number" min="0" max="10" />
+                    </div>
+                  </td>
+                  {/* Jumeau 2 */}
+                  <td className="border px-4 py-3">
                     <select name="jumeau2Sexe" value={filters.jumeau2Sexe} onChange={handleChange} className="input-field w-full text-sm p-2">
                       <option value="">Sexe</option>
                       <option value="M">M</option>
@@ -389,6 +329,16 @@ const HistoriqueMaternite: React.FC = () => {
                   <td className="border px-4 py-3">
                     <input name="jumeau2Poids" value={filters.jumeau2Poids} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Poids (g)..." type="number" min="0" />
                   </td>
+                  <td className="border px-4 py-3">
+                    <div className="flex items-center space-x-1">
+                      <input name="jumeau2Apgar1" value={filters.jumeau2Apgar1} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="1" type="number" min="0" max="10" />
+                      <span className="text-gray-500 text-xs">/</span>
+                      <input name="jumeau2Apgar2" value={filters.jumeau2Apgar2} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="2" type="number" min="0" max="10" />
+                      <span className="text-gray-500 text-xs">/</span>
+                      <input name="jumeau2Apgar3" value={filters.jumeau2Apgar3} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="3" type="number" min="0" max="10" />
+                    </div>
+                  </td>
+                  {/* Jumeau 3 */}
                   <td className="border px-4 py-3">
                     <select name="jumeau3Sexe" value={filters.jumeau3Sexe} onChange={handleChange} className="input-field w-full text-sm p-2">
                       <option value="">Sexe</option>
@@ -400,6 +350,16 @@ const HistoriqueMaternite: React.FC = () => {
                     <input name="jumeau3Poids" value={filters.jumeau3Poids} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Poids (g)..." type="number" min="0" />
                   </td>
                   <td className="border px-4 py-3">
+                    <div className="flex items-center space-x-1">
+                      <input name="jumeau3Apgar1" value={filters.jumeau3Apgar1} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="1" type="number" min="0" max="10" />
+                      <span className="text-gray-500 text-xs">/</span>
+                      <input name="jumeau3Apgar2" value={filters.jumeau3Apgar2} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="2" type="number" min="0" max="10" />
+                      <span className="text-gray-500 text-xs">/</span>
+                      <input name="jumeau3Apgar3" value={filters.jumeau3Apgar3} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="3" type="number" min="0" max="10" />
+                    </div>
+                  </td>
+                  {/* Jumeau 4 */}
+                  <td className="border px-4 py-3">
                     <select name="jumeau4Sexe" value={filters.jumeau4Sexe} onChange={handleChange} className="input-field w-full text-sm p-2">
                       <option value="">Sexe</option>
                       <option value="M">M</option>
@@ -409,7 +369,16 @@ const HistoriqueMaternite: React.FC = () => {
                   <td className="border px-4 py-3">
                     <input name="jumeau4Poids" value={filters.jumeau4Poids} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Poids (g)..." type="number" min="0" />
                   </td>
-                  <td colSpan={shouldShowCesarienneColumn() ? 8 : 7} className="border px-4 py-3 text-sm text-gray-500">
+                  <td className="border px-4 py-3">
+                    <div className="flex items-center space-x-1">
+                      <input name="jumeau4Apgar1" value={filters.jumeau4Apgar1} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="1" type="number" min="0" max="10" />
+                      <span className="text-gray-500 text-xs">/</span>
+                      <input name="jumeau4Apgar2" value={filters.jumeau4Apgar2} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="2" type="number" min="0" max="10" />
+                      <span className="text-gray-500 text-xs">/</span>
+                      <input name="jumeau4Apgar3" value={filters.jumeau4Apgar3} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="3" type="number" min="0" max="10" />
+                    </div>
+                  </td>
+                  <td colSpan={shouldShowCesarienneColumn() ? 5 : 4} className="border px-4 py-3 text-sm text-gray-500">
                     Informations des jumeaux (optionnel)
                   </td>
                 </tr>
