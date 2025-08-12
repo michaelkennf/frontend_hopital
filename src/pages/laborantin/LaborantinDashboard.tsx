@@ -4,35 +4,34 @@ import { GlobalErrorBoundary } from '../../components/GlobalErrorBoundary';
 import { Routes, Route } from 'react-router-dom';
 import Layout from '../../components/Layout';
 
-const SERVICES = [
-  {
-    label: "Parasitologie",
-    value: "PARASITOLOGIE",
-    exams: ["GE/TDR", "GEF", "CU", "FCV", "EDS"]
-  },
-  {
-    label: "Immuno-hématologie",
-    value: "IMMUNO_HEMATOLOGIE",
-    exams: [
-      "Widal", "CRP", "H Pylori", "Determine", "HCV", "HBS", "RPR", "VS en mm/h", "FR", "ASLO", "Rubéole", "GB x10⁹/L", "Toxo : IGG/IGM", "FL", "HGB en g/dl", "Hct en %", "GS et Rhésus", "TC", "TS"
-    ]
-  },
-  {
-    label: "Biologie",
-    value: "BIOLOGIE",
-    exams: ["Test de grossesse", "Spermogramme"]
-  },
-  {
-    label: "Biochimie",
-    value: "BIOCHIMIE",
-    exams: ["PH gastrique", "Glycémie en mg/dl"]
-  },
-  {
-    label: "Autres",
-    value: "AUTRES",
-    exams: []
-  }
-];
+// Styles CSS pour les composants
+const styles = {
+  inputField: "w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+  btnPrimary: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed",
+  btnSecondary: "inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500",
+  btnXs: "inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+};
+
+interface Patient {
+  id: number;
+  firstName: string;
+  lastName: string;
+  folderNumber: string;
+  gender: string;
+  dateOfBirth: string;
+  weight?: number;
+  address?: string;
+  phone?: string;
+}
+
+interface Exam {
+  id: number;
+  date: string;
+  examType: { id: number; name: string; price: number };
+  results?: string;
+  status: 'scheduled' | 'completed';
+  updatedAt?: string;
+}
 
 const navigationItems = [
   { name: 'Vue d\'ensemble', href: '/laborantin', icon: (
@@ -42,6 +41,31 @@ const navigationItems = [
     <svg className="mr-3 h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
   ) },
 ];
+
+// Fonction helper pour formater l'affichage du sexe
+const formatGender = (gender: string): string => {
+  if (!gender) return 'Non spécifié';
+  
+  const genderLower = gender.toLowerCase();
+  if (genderLower === 'm' || genderLower === 'masculin' || genderLower === 'h' || genderLower === 'homme') {
+    return 'Homme';
+  } else if (genderLower === 'f' || genderLower === 'féminin' || genderLower === 'femme' || genderLower === 'feminin') {
+    return 'Femme';
+  }
+  
+  return gender;
+};
+
+// Fonction helper pour obtenir la classe CSS du sexe
+const getGenderClass = (gender: string): string => {
+  const genderLower = gender?.toLowerCase();
+  if (genderLower === 'm' || genderLower === 'masculin' || genderLower === 'h' || genderLower === 'homme') {
+    return 'bg-blue-100 text-blue-800';
+  } else if (genderLower === 'f' || genderLower === 'féminin' || genderLower === 'femme') {
+    return 'bg-pink-100 text-pink-800';
+  }
+  return 'bg-gray-100 text-gray-800';
+};
 
 function LaborantinOverview() {
   const [stats, setStats] = useState<any>(null);
@@ -69,7 +93,7 @@ function LaborantinOverview() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Tableau de bord Laborantin</h1>
-      <p className="text-gray-600 mb-6">Bienvenue sur votre espace laborantin. Consultez les patients, saisissez et visualisez les examens.</p>
+      <p className="text-gray-600 mb-6">Bienvenue sur votre espace laborantin. Consultez les patients et réalisez les examens programmés.</p>
       
       {error && (
         <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4 text-red-700">
@@ -101,11 +125,11 @@ function LaborantinOverview() {
             <div className="mt-4 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Examens réalisés</span>
-                <span className="text-2xl font-bold text-blue-600">{stats.today.exams}</span>
+                <span className="text-2xl font-bold text-blue-600">{stats.today?.exams || 0}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Patients consultés</span>
-                <span className="text-2xl font-bold text-green-600">{stats.today.patients}</span>
+                <span className="text-2xl font-bold text-green-600">{stats.today?.patients || 0}</span>
               </div>
             </div>
           </div>
@@ -126,11 +150,11 @@ function LaborantinOverview() {
             <div className="mt-4 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Examens réalisés</span>
-                <span className="text-2xl font-bold text-green-600">{stats.thisMonth.exams}</span>
+                <span className="text-2xl font-bold text-green-600">{stats.thisMonth?.exams || 0}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Patients consultés</span>
-                <span className="text-2xl font-bold text-blue-600">{stats.thisMonth.patients}</span>
+                <span className="text-2xl font-bold text-blue-600">{stats.thisMonth?.patients || 0}</span>
               </div>
             </div>
           </div>
@@ -153,11 +177,11 @@ function LaborantinOverview() {
             <div className="mt-4 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Examens réalisés</span>
-                <span className="text-2xl font-bold text-purple-600">{stats.lastMonth.exams}</span>
+                <span className="text-2xl font-bold text-purple-600">{stats.lastMonth?.exams || 0}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Patients consultés</span>
-                <span className="text-2xl font-bold text-purple-600">{stats.lastMonth.patients}</span>
+                <span className="text-2xl font-bold text-purple-600">{stats.lastMonth?.patients || 0}</span>
               </div>
             </div>
           </div>
@@ -169,31 +193,56 @@ function LaborantinOverview() {
       )}
     </div>
   );
-}
+} 
 
-function PatientsExamens() {
-  const [patients, setPatients] = useState<any[]>([]);
-  const [selectedPatient, setSelectedPatient] = useState<any>(null);
-  const [exams, setExams] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // Formulaire ajout examen
-  const [service, setService] = useState('');
-  const [exam, setExam] = useState('');
-  const [result, setResult] = useState('');
-  const [addingExam, setAddingExam] = useState(false);
-  const [autoSelectedExam, setAutoSelectedExam] = useState<any>(null);
-
-  // Charger la liste des patients
+function PatientsExamens({ 
+  patients, 
+  selectedPatient, 
+  dossier, 
+  loading, 
+  error, 
+  searchTerm, 
+  addingExam, 
+  newExamResult,
+  onSearchTermChange,
+  onSelectPatient,
+  onMarkAsCompleted,
+  onNewExamResultChange,
+  onRefreshDossier,
+  onRefreshPatients
+}: {
+  patients: Patient[];
+  selectedPatient: Patient | null;
+  dossier: any;
+  loading: boolean;
+  error: string | null;
+  searchTerm: string;
+  addingExam: boolean;
+  newExamResult: string;
+  onSearchTermChange: (term: string) => void;
+  onSelectPatient: (patient: Patient) => void;
+  onMarkAsCompleted: (exam: Exam) => void;
+  onNewExamResultChange: (result: string) => void;
+  onRefreshDossier: () => void;
+  onRefreshPatients: () => void;
+}) {
+  // État pour forcer la mise à jour de l'interface en temps réel
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Mise à jour en temps réel pour maintenir l'interface active
   useEffect(() => {
-    setLoading(true);
-    axios.get('/api/patients')
-      .then(res => setPatients(res.data.patients))
-      .catch(() => setError('Erreur lors du chargement des patients'))
-      .finally(() => setLoading(false));
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000); // Mise à jour toutes les secondes
+    
+    return () => clearInterval(interval);
   }, []);
+  
+  // Fonction pour vérifier si un examen peut être modifié (dans les 5 minutes)
+  const canEditExam = (exam: Exam, allExams: any[]) => {
+    // Désactivé - plus de modification des résultats
+    return false;
+  };
 
   // Filtrer les patients selon le terme de recherche
   const filteredPatients = patients.filter(patient => {
@@ -205,212 +254,41 @@ function PatientsExamens() {
     );
   });
 
-  // Charger les examens du patient sélectionné
-  const handleSelectPatient = (patient: any) => {
-    setSelectedPatient(patient);
-    setLoading(true);
-    
-    // Charger l'historique complet des examens
-    axios.get(`/api/exams/history/${patient.id}`)
-    .then(res => {
-      const allExams = res.data.exams;
-      setExams(allExams);
-      
-      // Chercher l'examen le plus récent programmé (aujourd'hui ou le plus récent)
-      const today = new Date().toISOString().slice(0, 10);
-      let selectedExam = null;
-      
-      // Filtrer les examens programmés
-      const scheduledExams = allExams.filter((e: any) => e.status === 'scheduled');
-      
-      if (scheduledExams.length > 0) {
-        // D'abord chercher un examen d'aujourd'hui
-        selectedExam = scheduledExams.find((e: any) => 
-          e.date?.slice(0, 10) === today
-        );
-        
-        // Si pas d'examen aujourd'hui, prendre le plus récent
-        if (!selectedExam) {
-          selectedExam = scheduledExams[0]; // Le plus récent (trié par date desc)
-        }
-      }
-      
-      if (selectedExam) {
-        console.log('Examen programmé trouvé:', selectedExam);
-        // Auto-sélectionner le service et l'examen
-        const examName = selectedExam.examType?.name;
-        if (examName) {
-          // Trouver le service correspondant
-          const foundService = SERVICES.find(s => 
-            s.exams.includes(examName)
-          );
-          if (foundService) {
-            setService(foundService.value);
-            setExam(examName);
-            setAutoSelectedExam(selectedExam); // Set the auto-selected exam
-          } else {
-            // Si pas trouvé dans les services prédéfinis, mettre dans "Autres"
-            setService('AUTRES');
-            setExam(examName);
-            setAutoSelectedExam(selectedExam); // Set the auto-selected exam
-          }
-        }
-      } else {
-        // Si pas d'examen programmé, réinitialiser
-        setService('');
-        setExam('');
-        setAutoSelectedExam(null); // Clear auto-selected exam
-      }
-    })
-      .catch(() => setError('Erreur lors du chargement des examens'))
-      .finally(() => setLoading(false));
-  };
-
-  // Ajouter un examen
-  const handleAddExam = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedPatient) return;
-    setAddingExam(true);
-    setError(null);
-    try {
-      // Si un examen est auto-sélectionné, le marquer comme réalisé
-      if (autoSelectedExam) {
-        console.log('🔍 Marquage de l\'examen comme réalisé:', autoSelectedExam);
-        console.log('🔍 ID de l\'examen:', autoSelectedExam.id);
-        console.log('🔍 Résultat à ajouter:', result);
-        
-        const response = await axios.patch(`/api/exams/${autoSelectedExam.id}/complete`, {
-          results: result
-        });
-        
-        console.log('✅ Réponse du serveur:', response.data);
-        
-        // Rafraîchir l'historique complet des examens
-        const historyRes = await axios.get(`/api/exams/history/${selectedPatient.id}`);
-        setExams(historyRes.data.exams);
-        
-        // Réinitialiser seulement le formulaire, pas l'autoSelectedExam
-        setService('');
-        setExam('');
-        setResult('');
-        // Ne pas réinitialiser setAutoSelectedExam(null) pour garder l'historique
-      } else {
-        // Logique pour les examens manuels (hospitalisés/maternité)
-      let examName = exam;
-        let examTypeId = null;
-        
-      if (service === 'AUTRES' && !examName) {
-        setError('Veuillez saisir le nom de l\'examen');
-        setAddingExam(false);
-        return;
-      }
-        
-      // Créer le type d'examen à la volée si "Autres"
-      if (service === 'AUTRES') {
-        // Créer le type d'examen dans la base
-        const res = await axios.post('/api/exams/types', { name: examName, price: 0 });
-        examTypeId = res.data.examType.id;
-      } else {
-        // Chercher l'id du type d'examen existant
-        const allTypes = await axios.get('/api/exams');
-        const found = allTypes.data.examTypes.find((et: any) => et.name === examName);
-        if (!found) {
-          setError('Type d\'examen non trouvé');
-          setAddingExam(false);
-          return;
-        }
-        examTypeId = found.id;
-      }
-        
-        // Créer l'examen directement comme réalisé (pour les hospitalisés/maternité)
-        const examResponse = await axios.post('/api/exams', {
-        patientId: selectedPatient.id,
-        examTypeId,
-        date: new Date().toISOString(),
-        results: result
-      });
-        
-        // Marquer immédiatement comme réalisé
-        if (examResponse.data.exam) {
-          await axios.patch(`/api/exams/${examResponse.data.exam.id}/complete`, {
-            results: result
-          });
-        }
-        
-        // Rafraîchir l'historique complet des examens
-        const historyRes = await axios.get(`/api/exams/history/${selectedPatient.id}`);
-        setExams(historyRes.data.exams);
-      setService('');
-      setExam('');
-      setResult('');
-      }
-    } catch (error: any) {
-      console.error('Erreur lors de l\'ajout de l\'examen:', error);
-      setError(error.response?.data?.error || 'Erreur lors de l\'ajout de l\'examen');
-    } finally {
-      setAddingExam(false);
-    }
-  };
-
-  const selectedService = SERVICES.find(s => s.value === service);
-
-  const [resultInputs, setResultInputs] = useState<{ [examId: number]: string }>({});
-  const [markingExamId, setMarkingExamId] = useState<number | null>(null);
-
-  // Quand on charge les examens, on réinitialise les champs résultat
-  useEffect(() => {
-    if (exams.length > 0) {
-      const initial: { [examId: number]: string } = {};
-      exams.forEach(e => {
-        if (e.status === 'scheduled') initial[e.id] = '';
-      });
-      setResultInputs(initial);
-    }
-  }, [exams]);
-
-  // Fonction pour marquer un examen comme réalisé
-  const handleMarkAsCompleted = async (exam: any) => {
-    setMarkingExamId(exam.id);
-    try {
-      await axios.patch(`/api/exams/${exam.id}/complete`, {
-        results: resultInputs[exam.id]
-      });
-      // Rafraîchir l'historique complet
-      const historyRes = await axios.get(`/api/exams/history/${selectedPatient.id}`);
-      setExams(historyRes.data.exams);
-      // Réinitialiser le champ résultat de cet examen
-      setResultInputs(prev => ({ ...prev, [exam.id]: '' }));
-      
-      // Vérifier s'il reste des examens programmés
-      const remainingScheduled = historyRes.data.exams.filter((e: any) => e.status === 'scheduled');
-      if (remainingScheduled.length === 0) {
-        // Plus d'examens programmés, réactiver le formulaire
-        setAutoSelectedExam(null);
-        setService('');
-        setExam('');
-        setResult('');
-      }
-    } catch (error: any) {
-      setError(error.response?.data?.error || 'Erreur lors de la validation de l\'examen');
-    } finally {
-      setMarkingExamId(null);
-    }
-  };
-
-  // Fonction pour vérifier s'il y a des examens programmés
-  const hasScheduledExams = exams.some((e: any) => e.status === 'scheduled');
-  
-  // Le formulaire est activé si : pas d'examen auto-sélectionné OU pas d'examens programmés
-  const isFormEnabled = !autoSelectedExam || !hasScheduledExams;
-
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Espace Laborantin</h1>
-      {error && <div className="mb-4 text-red-600">{error}</div>}
-      <div className="flex gap-8">
+      <h2 className="font-semibold text-lg mb-2">Patients & Examens</h2>
+      <p className="text-gray-600 mb-6">Interface pour réaliser les examens programmés et modifier les résultats dans les 5 minutes après soumission.</p>
+      
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
+          <div className="flex">
+            <svg className="h-5 w-5 text-red-400 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <p className="font-medium">Erreur</p>
+              <p className="text-sm">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Liste des patients */}
-        <div className="w-1/3">
-          <h2 className="font-semibold mb-2">Liste des patients</h2>
+        <div className="lg:col-span-1">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-lg">Sélectionner un patient</h2>
+            <button
+              onClick={onRefreshPatients}
+              className="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors text-sm"
+              title="Rafraîchir la liste des patients"
+            >
+              <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Rafraîchir
+            </button>
+          </div>
           
           {/* Barre de recherche et filtres */}
           <div className="mb-4 space-y-3">
@@ -419,14 +297,14 @@ function PatientsExamens() {
               <input
                 type="text"
                 placeholder="Rechercher par nom, prénom ou dossier..."
-                className="input-field flex-1"
+                className={styles.inputField}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => onSearchTermChange(e.target.value)}
               />
               
               <button
-                onClick={() => setSearchTerm('')}
-                className="btn-secondary px-3"
+                onClick={() => onSearchTermChange('')}
+                className={`${styles.btnSecondary} px-3`}
                 title="Réinitialiser la recherche"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -444,19 +322,19 @@ function PatientsExamens() {
             )}
           </div>
 
-          {loading && <div>Chargement...</div>}
+          {/* Liste des patients filtrés */}
           <div className="max-h-96 overflow-y-auto border rounded">
             {loading ? (
               <div className="p-4 text-center text-gray-500">Chargement...</div>
             ) : filteredPatients.length === 0 ? (
               <div className="p-4 text-center text-gray-500">
-                {searchTerm ? 'Aucun patient trouvé' : 'Aucun patient enregistré'}
+                {searchTerm ? 'Aucun patient trouvé' : 'Aucun patient avec examens programmés'}
               </div>
             ) : (
               filteredPatients.map(patient => (
                 <div
                   key={patient.id}
-                  onClick={() => handleSelectPatient(patient)}
+                  onClick={() => onSelectPatient(patient)}
                   className={`p-3 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
                     selectedPatient?.id === patient.id ? 'bg-blue-50 border-blue-200' : ''
                   }`}
@@ -467,14 +345,27 @@ function PatientsExamens() {
                       <div className="text-sm text-gray-600">
                         Dossier: {patient.folderNumber}
                       </div>
+                      <div className="text-xs text-gray-500">
+                        {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString('fr-FR') : 'Date non spécifiée'}
+                      </div>
+                      {/* Indicateur de service */}
+                      <div className="text-xs mt-1">
+                        <span className={`px-2 py-1 rounded-full ${
+                          (patient as any).service === 'Maternité' 
+                            ? 'bg-pink-100 text-pink-800' 
+                            : (patient as any).service === 'Patient visiteur'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {(patient as any).service === 'Maternité' ? '🤱 Maternité' : 
+                           (patient as any).service === 'Patient visiteur' ? '👤 Visiteur' :
+                           '🏥 Hospitalisation'}
+                        </span>
+                      </div>
                     </div>
                     <div className="text-xs text-gray-500 flex items-center gap-2">
-                      <span className={`px-2 py-1 rounded-full ${
-                        patient.gender === 'M' || patient.gender === 'Masculin' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'
-                      }`}>
-                        {patient.gender === 'M' || patient.gender === 'Masculin' ? 'Homme' : 
-                         patient.gender === 'F' || patient.gender === 'Féminin' ? 'Femme' : 
-                         patient.gender || 'Non spécifié'}
+                      <span className={`px-2 py-1 rounded-full ${getGenderClass(patient.gender)}`}>
+                        {formatGender(patient.gender)}
                       </span>
                       {patient.weight && (
                         <span className="text-gray-400">
@@ -488,228 +379,499 @@ function PatientsExamens() {
             )}
           </div>
         </div>
-        {/* Examens du patient sélectionné + formulaire */}
-        <div className="flex-1">
-          {selectedPatient ? (
-            <div>
-              <h2 className="font-semibold text-lg mb-2">Examens de {selectedPatient.lastName} {selectedPatient.firstName}</h2>
-              <div className="mb-4">
-                <span className="text-sm text-gray-600">Sexe : {selectedPatient.gender} | Date de naissance : {new Date(selectedPatient.dateOfBirth).toLocaleDateString()}</span>
-              </div>
-              {/* Formulaire ajout examen */}
-              <form className="mb-6 p-4 bg-blue-50 rounded" onSubmit={handleAddExam}>
-                <h3 className="font-semibold mb-2">
-                  {autoSelectedExam ? 'Examen programmé à la caisse' : 'Ajouter un examen labo'}
-                </h3>
-                
-                {/* Affichage de l'examen auto-sélectionné */}
-                {autoSelectedExam && (
-                  <div className="mb-3 p-3 bg-green-100 rounded border-l-4 border-green-400">
-                    <div className="flex items-center">
-                      <svg className="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <div>
-                        <span className="text-sm font-medium text-green-800">Examen sélectionné à la caisse :</span>
-                        <div className="text-sm text-green-700 mt-1">
-                          {autoSelectedExam.examType?.name || 'Examen inconnu'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Message informatif quand tous les examens programmés sont réalisés */}
-                {!hasScheduledExams && exams.length > 0 && (
-                  <div className="mb-3 p-3 bg-blue-100 rounded border-l-4 border-blue-400">
-                    <div className="flex items-center">
-                      <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="text-sm text-blue-800">
-                        <strong>Tous les examens programmés sont réalisés.</strong> Vous pouvez ajouter d'autres examens si nécessaire.
-                      </span>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Sélection du service (activée si pas d'auto-sélection ou tous les examens programmés sont réalisés) */}
-                <div className="mb-2">
-                  <label className="block text-sm mb-1">Service</label>
-                  <select
-                    className="input-field"
-                    value={service}
-                    onChange={e => { setService(e.target.value); setExam(''); setAutoSelectedExam(null); }}
-                    required
-                    disabled={!isFormEnabled}
-                  >
-                    <option value="">Sélectionner un service...</option>
-                    {SERVICES.map(s => (
-                      <option key={s.value} value={s.value}>{s.label}</option>
-                    ))}
-                  </select>
+
+        {/* Dossier de patient sélectionné */}
+        {selectedPatient && dossier ? (
+          <div className="lg:col-span-2">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-lg">Dossier de {selectedPatient.lastName} {selectedPatient.firstName}</h2>
+              <button
+                onClick={onRefreshDossier}
+                className="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors text-sm"
+                title="Rafraîchir le dossier"
+              >
+                <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Rafraîchir
+              </button>
+            </div>
+            
+            {/* Informations du patient */}
+            <div className="mb-6 p-4 bg-gray-50 rounded border">
+              <h3 className="font-semibold text-gray-800 mb-3">Informations du patient</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="font-medium text-gray-700">Dossier :</span> 
+                  <span className="ml-2 text-gray-600">{selectedPatient.folderNumber}</span>
                 </div>
-                
-                {/* Sélection de l'examen (activée si pas d'auto-sélection ou tous les examens programmés sont réalisés) */}
-                {service && service !== 'AUTRES' && (
-                  <div className="mb-2">
-                    <label className="block text-sm mb-1">Examen</label>
-                    <select
-                      className="input-field"
-                      value={exam}
-                      onChange={e => { setExam(e.target.value); setAutoSelectedExam(null); }}
-                      required
-                      disabled={!isFormEnabled}
-                    >
-                      <option value="">Sélectionner un examen...</option>
-                      {selectedService?.exams.map(ex => (
-                        <option key={ex} value={ex}>{ex}</option>
-                      ))}
-                    </select>
+                <div>
+                  <span className="font-medium text-gray-700">Sexe :</span> 
+                  <span className="ml-2 text-gray-600">{formatGender(selectedPatient.gender)}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Date de naissance :</span> 
+                  <span className="ml-2 text-gray-600">{selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString('fr-FR') : 'Non spécifiée'}</span>
+                </div>
+                {selectedPatient.weight && (
+                  <div>
+                    <span className="font-medium text-gray-700">Poids :</span> 
+                    <span className="ml-2 text-gray-600">{selectedPatient.weight} kg</span>
                   </div>
                 )}
-                
-                {/* Saisie manuelle pour "Autres" (activée si pas d'auto-sélection ou tous les examens programmés sont réalisés) */}
-                {service === 'AUTRES' && (
-                  <div className="mb-2">
-                    <label className="block text-sm mb-1">Nom de l'examen</label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={exam}
-                      onChange={e => { setExam(e.target.value); setAutoSelectedExam(null); }}
-                      placeholder="Saisir le nom de l'examen"
-                      required
-                      disabled={!isFormEnabled}
-                    />
+                {selectedPatient.address && (
+                  <div>
+                    <span className="font-medium text-gray-700">Adresse :</span> 
+                    <span className="ml-2 text-gray-600">{selectedPatient.address}</span>
                   </div>
                 )}
-                
-                {/* Champ résultat */}
-                {service && (
-                  <div className="mb-2">
-                    <label className="block text-sm mb-1">Résultat</label>
-                    <textarea
-                      className="input-field"
-                      value={result}
-                      onChange={e => setResult(e.target.value)}
-                      placeholder="Rédiger le résultat de l'examen"
-                      required
-                    />
+                {selectedPatient.phone && (
+                  <div>
+                    <span className="font-medium text-gray-700">Téléphone :</span> 
+                    <span className="ml-2 text-gray-600">{selectedPatient.phone}</span>
                   </div>
                 )}
-                
-                <button type="submit" className="btn-primary mt-2" disabled={addingExam || (!autoSelectedExam && !service)}>
-                  {addingExam ? 'Traitement...' : autoSelectedExam ? 'Marquer comme réalisé' : 'Ajouter l\'examen'}
-                </button>
-                
-                {/* Message informatif */}
-                {autoSelectedExam && (
-                  <div className="mt-3 p-3 bg-blue-50 rounded border-l-4 border-blue-400">
-                    <div className="flex items-center">
-                      <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="text-sm text-blue-800">
-                        <strong>Examen programmé détecté :</strong> {autoSelectedExam.examType?.name}
-                      </span>
-                    </div>
-                    <p className="text-xs text-blue-600 mt-1 ml-6">
-                      Ajoutez le résultat et cliquez sur "Marquer comme réalisé" pour finaliser l'examen.
-                    </p>
+              </div>
+            </div>
+
+            {/* Formulaire pour ajouter un résultat d'examen */}
+            <div className="mb-6 p-4 bg-green-50 rounded border-l-4 border-green-400">
+              <h3 className="font-semibold mb-2 text-green-800">Ajouter un résultat d'examen</h3>
+              
+              <div className="mb-3">
+                <label className="block text-sm font-medium mb-1">Résultat de l'examen *</label>
+                <textarea
+                  className={styles.inputField}
+                  rows={3}
+                  value={newExamResult}
+                  onChange={e => onNewExamResultChange(e.target.value)}
+                  placeholder="Saisir le résultat de l'examen..."
+                  required
+                />
+              </div>
+              
+              <button 
+                className={styles.btnPrimary}
+                disabled={addingExam || !newExamResult.trim()}
+                onClick={() => {
+                  // Trouver le premier examen programmé
+                  const scheduledExam = dossier.exams?.find((e: any) => e.status === 'scheduled');
+                  if (scheduledExam) {
+                    onMarkAsCompleted(scheduledExam);
+                  }
+                }}
+              >
+                {addingExam ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Validation...
                   </div>
-                )}
-              </form>
-              <div className="mb-4">
-                <h3 className="font-semibold mb-3">Historique des examens</h3>
-                {exams.length === 0 ? (
-                  <div className="text-gray-500 text-center py-4">Aucun examen pour ce patient.</div>
                 ) : (
-                  <div className="space-y-3">
-                    {exams.map((e: any) => {
-                      const isCompleted = e.status === 'completed';
-                      const isScheduled = e.status === 'scheduled';
-                      
-                      return (
-                        <div key={e.id} className={`bg-white p-4 rounded-lg border shadow-sm ${isCompleted ? 'border-green-200' : 'border-yellow-200'}`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center">
-                              {isCompleted ? (
-                                <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              ) : (
-                                <svg className="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              )}
-                              <span className="font-medium text-gray-900">{e.examType?.name || 'Examen'}</span>
-                              <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
-                                isCompleted 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                {isCompleted ? 'Réalisé' : 'Programmé'}
-                              </span>
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              <div>le {new Date(e.date).toLocaleDateString('fr-FR')}</div>
-                              <div>à {new Date(e.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
-                            </div>
+                  'Marquer comme réalisé'
+                )}
+              </button>
+            </div>
+            
+            {/* Historique des examens */}
+            <div className="mb-4">
+              <h3 className="font-semibold mb-3">Examens du patient</h3>
+              {dossier.exams && dossier.exams.length > 0 ? (
+                <div className="space-y-3">
+                  {dossier.exams.map((exam: any) => {
+                    const isCompleted = exam.status === 'completed';
+                    const isScheduled = exam.status === 'scheduled';
+                    
+                    return (
+                      <div key={exam.id} className={`bg-white p-4 rounded-lg border shadow-sm ${
+                        isCompleted ? 'border-green-200' : 'border-yellow-200'
+                      }`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            {isCompleted ? (
+                              <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            ) : (
+                              <svg className="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            )}
+                            <span className="font-medium text-gray-900">{exam.examType?.name || 'Examen'}</span>
+                            <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+                              isCompleted 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {isCompleted ? 'Réalisé' : 'Programmé'}
+                            </span>
                           </div>
-                          {/* Si programmé, afficher champ résultat + bouton */}
-                          {isScheduled && (
-                            <div className="flex flex-col md:flex-row gap-2 items-start md:items-center mt-2">
-                              <textarea
-                                className="input-field flex-1"
-                                placeholder="Résultat de l'examen"
-                                value={resultInputs[e.id] || ''}
-                                onChange={ev => setResultInputs(prev => ({ ...prev, [e.id]: ev.target.value }))}
-                              />
-                              <button
-                                className="btn-primary"
-                                disabled={markingExamId === e.id || !resultInputs[e.id]}
-                                onClick={() => handleMarkAsCompleted(e)}
-                              >
-                                {markingExamId === e.id ? 'Traitement...' : 'Marquer comme réalisé'}
-                              </button>
-                            </div>
-                          )}
-                          {/* Affichage du résultat si existant */}
-                          {e.results && (
-                            <div className="mt-3 p-3 bg-gray-50 rounded border-l-4 border-blue-400">
-                              <div className="flex items-center mb-1">
+                          <div className="text-sm text-gray-500">
+                            <div>le {new Date(exam.date).toLocaleDateString('fr-FR')}</div>
+                            <div>à {new Date(exam.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                            {exam.updatedAt && exam.updatedAt !== exam.date && (
+                              <div className="text-xs text-blue-600 mt-1">
+                                Soumis le {new Date(exam.updatedAt).toLocaleDateString('fr-FR')} 
+                                à {new Date(exam.updatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Affichage du résultat si existant */}
+                        {exam.results && (
+                          <div className="mt-3 p-3 bg-gray-50 rounded border-l-4 border-blue-400">
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center">
                                 <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <strong className="text-blue-800 text-sm">Résultat :</strong>
                               </div>
-                              <div className="text-sm text-gray-700 ml-6 whitespace-pre-wrap">{e.results}</div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                            
+                            {/* Affichage du résultat en lecture seule */}
+                            <div className="text-sm text-gray-700 ml-6 whitespace-pre-wrap">{exam.results}</div>
+                            
+                            {/* Informations sur l'examen - version simplifiée */}
+                            <div className="text-xs text-gray-500 mt-2 ml-6">
+                              {exam.updatedAt && (
+                                <div className="text-gray-500">
+                                  Soumis le {new Date(exam.updatedAt).toLocaleDateString('fr-FR')} 
+                                  à {new Date(exam.updatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                )}
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-gray-500 text-center py-4 bg-gray-50 rounded">
+                  Aucun examen programmé ou réalisé pour ce patient.
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="text-gray-500">Sélectionnez un patient pour voir ses examens.</div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="lg:col-span-2 text-gray-500 text-center py-8 bg-gray-50 rounded">
+            <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <p className="text-lg font-medium">Aucun patient sélectionné</p>
+            <p className="text-sm">Cliquez sur un patient dans la liste pour voir ses examens.</p>
+          </div>
+        )}
       </div>
     </div>
   );
-}
+} 
 
 const LaborantinDashboard: React.FC = () => {
+  // États gérés au niveau parent pour persister lors de la navigation
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [dossier, setDossier] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // États pour la gestion des examens
+  const [addingExam, setAddingExam] = useState(false);
+  const [newExamResult, setNewExamResult] = useState('');
+
+  // Charger la liste des patients au montage
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    
+    const loadPatients = async () => {
+      try {
+        const response = await axios.get('/api/exams/scheduled');
+        const scheduledExams = response.data.exams || [];
+        
+        // Créer une liste unique de patients avec des examens programmés
+        const patientsWithExams = scheduledExams.map((exam: any) => {
+          const patient = exam.patient;
+          let service = 'Patient visiteur';
+          
+          if (exam.hospitalizationId) {
+            service = 'Hospitalisation';
+          } else if (exam.maternityHistoryId) {
+            service = 'Maternité';
+          } else {
+            service = 'Caisse';
+          }
+          
+          return {
+            ...patient,
+            service,
+            examId: exam.id,
+            examDate: exam.date,
+            examStatus: exam.status,
+            examType: exam.examType?.name || 'Examen'
+          };
+        });
+        
+        // Dédupliquer les patients en gardant tous les examens
+        const uniquePatients = patientsWithExams.filter((patient: any, index: number, self: any[]) => 
+          patient?.id && index === self.findIndex((p: any) => p?.id === patient?.id)
+        );
+        
+        // Ajouter les nouveaux patients à la liste existante au lieu de les remplacer
+        setPatients(prevPatients => {
+          const existingPatientIds = new Set(prevPatients.map((p: Patient) => p.id));
+          const newPatients = uniquePatients.filter((p: any) => !existingPatientIds.has(p.id));
+          
+          if (newPatients.length > 0) {
+            console.log(`✅ ${newPatients.length} nouveaux patients ajoutés à la liste existante`);
+          }
+          
+          // Retourner la liste complète : anciens + nouveaux patients
+          const updatedList = [...prevPatients, ...newPatients];
+          console.log(`📊 Total patients dans la liste: ${updatedList.length}`);
+          return updatedList;
+        });
+        
+        // Si un patient est déjà sélectionné, maintenir son dossier
+        if (selectedPatient && !uniquePatients.find((p: Patient) => p.id === selectedPatient.id)) {
+          console.log('⚠️ Patient sélectionné n\'a plus d\'examens programmés, mais on garde le dossier');
+        }
+        
+      } catch (error: any) {
+        console.error('❌ Erreur lors du chargement des patients:', error);
+        setError('Erreur lors du chargement des patients');
+        
+        // En cas d'erreur, garder les patients existants si possible
+        if (patients.length === 0) {
+          setError('Impossible de charger les patients. Vérifiez votre connexion.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadPatients();
+  }, []); // Charger seulement au montage
+
+  // Fonction pour rafraîchir la liste des patients sans perdre les existants
+  const handleRefreshPatients = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await axios.get('/api/exams/scheduled');
+      const scheduledExams = response.data.exams || [];
+      
+      // Créer une liste unique de patients avec des examens programmés
+      const patientsWithExams = scheduledExams.map((exam: any) => {
+        const patient = exam.patient;
+        let service = 'Patient visiteur';
+        
+        if (exam.hospitalizationId) {
+          service = 'Hospitalisation';
+        } else if (exam.maternityHistoryId) {
+          service = 'Maternité';
+        } else {
+          service = 'Caisse';
+        }
+        
+        return {
+          ...patient,
+          service,
+          examId: exam.id,
+          examDate: exam.date,
+          examStatus: exam.status,
+          examType: exam.examType?.name || 'Examen'
+        };
+      });
+      
+      // Dédupliquer les patients
+      const uniquePatients = patientsWithExams.filter((patient: any, index: number, self: any[]) => 
+        patient?.id && index === self.findIndex((p: any) => p?.id === patient?.id)
+      );
+      
+      // Mettre à jour la liste en préservant tous les patients existants
+      setPatients(prevPatients => {
+        const existingPatientIds = new Set(prevPatients.map((p: Patient) => p.id));
+        const newPatients = uniquePatients.filter((p: any) => !existingPatientIds.has(p.id));
+        
+        if (newPatients.length > 0) {
+          console.log(`🔄 ${newPatients.length} nouveaux patients ajoutés lors du rafraîchissement`);
+        }
+        
+        // Retourner la liste complète : anciens + nouveaux patients
+        const updatedList = [...prevPatients, ...newPatients];
+        console.log(`📊 Total patients après rafraîchissement: ${updatedList.length}`);
+        return updatedList;
+      });
+      
+    } catch (error: any) {
+      console.error('❌ Erreur lors du rafraîchissement des patients:', error);
+      setError('Erreur lors du rafraîchissement des patients');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Charger le dossier du patient sélectionné
+  const handleSelectPatient = (patient: Patient) => {
+    setSelectedPatient(patient);
+    setLoading(true);
+    setError(null);
+    
+    const loadDossier = async () => {
+      try {
+        const response = await axios.get(`/api/exams/history/${patient.id}`);
+        setDossier(response.data);
+        console.log('✅ Dossier chargé pour:', patient.firstName, patient.lastName);
+        
+        // Vérifier que le dossier contient des examens
+        if (response.data.exams && response.data.exams.length > 0) {
+          const scheduledExams = response.data.exams.filter((e: any) => e.status === 'scheduled');
+          const completedExams = response.data.exams.filter((e: any) => e.status === 'completed');
+          
+          console.log(`📊 Dossier: ${scheduledExams.length} examens programmés, ${completedExams.length} examens réalisés`);
+        }
+        
+      } catch (error: any) {
+        console.error('❌ Erreur lors du chargement du dossier:', error);
+        setError('Erreur lors du chargement du dossier patient');
+        
+        // En cas d'erreur, garder le patient sélectionné mais afficher l'erreur
+        console.log('⚠️ Patient sélectionné maintenu malgré l\'erreur de chargement du dossier');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadDossier();
+  };
+
+  // Auto-refresh du dossier pour maintenir la visibilité
+  useEffect(() => {
+    if (selectedPatient && dossier) {
+      const refreshInterval = setInterval(async () => {
+        try {
+          const dossierRes = await axios.get(`/api/exams/history/${selectedPatient.id}`);
+          setDossier(dossierRes.data);
+          console.log('🔄 Dossier rafraîchi automatiquement');
+        } catch (error) {
+          console.log('⚠️ Erreur lors du rafraîchissement auto:', error);
+        }
+      }, 30000); // Rafraîchir toutes les 30 secondes
+      
+      return () => clearInterval(refreshInterval);
+    }
+  }, [selectedPatient, dossier]);
+
+  // Fonction pour rafraîchir manuellement le dossier
+  const handleRefreshDossier = async () => {
+    if (selectedPatient) {
+      try {
+        const dossierRes = await axios.get(`/api/exams/history/${selectedPatient.id}`);
+        setDossier(dossierRes.data);
+        console.log('🔄 Dossier rafraîchi manuellement');
+      } catch (error) {
+        console.error('❌ Erreur lors du rafraîchissement manuel:', error);
+      }
+    }
+  };
+
+  // Fonction pour marquer un examen comme réalisé
+  const handleMarkAsCompleted = async (exam: Exam) => {
+    if (!newExamResult.trim()) {
+      setError('Veuillez saisir un résultat avant de marquer l\'examen comme réalisé.');
+      return;
+    }
+
+    setAddingExam(true);
+    setError(null);
+    
+    // Capturer l'heure exacte à l'instantané de la soumission
+    const submissionTimestamp = new Date();
+    const submissionISO = submissionTimestamp.toISOString();
+    
+    console.log('🕐 Heure de soumission capturée:', submissionISO);
+    console.log('🕐 Heure locale:', submissionTimestamp.toLocaleString('fr-FR'));
+    
+    try {
+      const response = await axios.patch(`/api/exams/${exam.id}/complete`, {
+        results: newExamResult.trim(),
+        completedAt: submissionISO // Heure exacte de soumission
+      });
+      
+      console.log(`✅ Examen ${exam.examType?.name || 'Examen'} marqué comme réalisé`);
+      console.log('📡 Réponse API:', response.data);
+      
+      // Rafraîchir le dossier immédiatement pour maintenir la visibilité
+      if (selectedPatient) {
+        try {
+          const dossierRes = await axios.get(`/api/exams/history/${selectedPatient.id}`);
+          console.log('📋 Dossier rafraîchi après soumission');
+          
+          // Vérifier que l'examen a bien été mis à jour
+          const updatedExam = dossierRes.data.exams?.find((e: any) => e.id === exam.id);
+          if (updatedExam) {
+            console.log('🔍 Examen mis à jour:', {
+              id: updatedExam.id,
+              status: updatedExam.status,
+              results: updatedExam.results,
+              updatedAt: updatedExam.updatedAt
+            });
+          }
+          
+          setDossier(dossierRes.data);
+          
+          // Vérifier s'il reste des examens programmés
+          const remainingScheduled = dossierRes.data.exams?.filter((e: any) => e.status === 'scheduled');
+          if (remainingScheduled && remainingScheduled.length > 0) {
+            console.log(`📋 Il reste ${remainingScheduled.length} examen(s) programmé(s)`);
+          } else {
+            console.log('📋 Tous les examens sont réalisés');
+          }
+          
+        } catch (dossierError: any) {
+          console.error('⚠️ Erreur lors du rafraîchissement du dossier:', dossierError);
+          // Ne pas afficher d'erreur à l'utilisateur, le dossier reste visible
+        }
+      }
+      
+      // Réinitialiser le formulaire
+      setNewExamResult('');
+      
+    } catch (error: any) {
+      console.error('❌ Erreur lors de la validation de l\'examen:', error);
+      setError(error.response?.data?.error || 'Erreur lors de la validation de l\'examen');
+    } finally {
+      setAddingExam(false);
+    }
+  };
+
   return (
     <Layout title="Laborantin" navigationItems={navigationItems}>
       <GlobalErrorBoundary>
         <Routes>
           <Route path="/" element={<LaborantinOverview />} />
-          <Route path="/patients" element={<PatientsExamens />} />
+          <Route path="/patients" element={
+            <PatientsExamens 
+              patients={patients}
+              selectedPatient={selectedPatient}
+              dossier={dossier}
+              loading={loading}
+              error={error}
+              searchTerm={searchTerm}
+              addingExam={addingExam}
+              newExamResult={newExamResult}
+              onSearchTermChange={setSearchTerm}
+              onSelectPatient={handleSelectPatient}
+              onMarkAsCompleted={handleMarkAsCompleted}
+              onNewExamResultChange={setNewExamResult}
+              onRefreshDossier={handleRefreshDossier}
+              onRefreshPatients={handleRefreshPatients}
+            />
+          } />
         </Routes>
       </GlobalErrorBoundary>
     </Layout>

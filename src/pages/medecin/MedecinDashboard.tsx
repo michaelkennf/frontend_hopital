@@ -162,6 +162,11 @@ function PatientsDossiers() {
   const [newConsultation, setNewConsultation] = useState({ typeId: '', notes: '' });
   const [addingConsultation, setAddingConsultation] = useState(false);
   const [treatmentForms, setTreatmentForms] = useState<{ [consultationId: number]: { medicationName: string; notes: string; loading: boolean; visible: boolean } }>({});
+  
+  // États pour la modification des notes de consultation
+  const [editingConsultationId, setEditingConsultationId] = useState<number | null>(null);
+  const [editNotesInputs, setEditNotesInputs] = useState<{ [consultationId: number]: string }>({});
+  const [updatingConsultationId, setUpdatingConsultationId] = useState<number | null>(null);
 
   // États pour la recherche et filtres
   const [searchTerm, setSearchTerm] = useState('');
@@ -178,6 +183,62 @@ function PatientsDossiers() {
     const today = new Date().toISOString().slice(0, 10);
     const consultationDay = new Date(consultationDate).toISOString().slice(0, 10);
     return today === consultationDay;
+  };
+
+  // Fonction pour vérifier si une consultation peut être modifiée (dans les 5 minutes)
+  const canEditConsultation = (consultation: any) => {
+    const now = new Date();
+    const updatedAt = new Date(consultation.updatedAt || consultation.date);
+    const timeDifference = now.getTime() - updatedAt.getTime();
+    const fiveMinutesInMs = 5 * 60 * 1000; // 5 minutes en millisecondes
+    
+    return timeDifference <= fiveMinutesInMs;
+  };
+
+  // Fonction pour commencer la modification des notes
+  const handleStartEditNotes = (consultation: any) => {
+    setEditingConsultationId(consultation.id);
+    setEditNotesInputs(prev => ({
+      ...prev,
+      [consultation.id]: consultation.notes || ''
+    }));
+  };
+
+  // Fonction pour annuler la modification
+  const handleCancelEditNotes = () => {
+    setEditingConsultationId(null);
+  };
+
+  // Fonction pour sauvegarder la modification des notes
+  const handleSaveEditNotes = async (consultationId: number) => {
+    setUpdatingConsultationId(consultationId);
+    setError(null);
+    
+    try {
+      const response = await axios.patch(`/api/consultations/${consultationId}/edit-notes`, {
+        notes: editNotesInputs[consultationId]
+      });
+      
+      console.log('✅ Notes modifiées:', response.data);
+      
+      // Rafraîchir le dossier
+      if (selectedPatient) {
+        const dossierRes = await axios.get(`/api/patients/${selectedPatient.id}/dossier`);
+        setDossier(dossierRes.data);
+      }
+      
+      setEditingConsultationId(null);
+      
+    } catch (error: any) {
+      console.error('Erreur lors de la modification:', error);
+      if (error.response?.status === 403) {
+        setError('La période de modification (5 minutes) est expirée.');
+      } else {
+        setError(error.response?.data?.error || 'Erreur lors de la modification des notes');
+      }
+    } finally {
+      setUpdatingConsultationId(null);
+    }
   };
 
   // Initialiser un formulaire de traitement fermé
@@ -548,13 +609,53 @@ function PatientsDossiers() {
                       {/* Signes et maladies */}
                       {c.notes && (
                         <div className="mb-3 p-3 bg-yellow-50 rounded border-l-4 border-yellow-400">
-                          <div className="flex items-center mb-1">
-                            <svg className="w-4 h-4 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                            </svg>
-                            <strong className="text-yellow-800 text-sm">Signes et maladies :</strong>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center">
+                              <svg className="w-4 h-4 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                              </svg>
+                              <strong className="text-yellow-800 text-sm">Signes et maladies :</strong>
+                            </div>
+                            {/* Bouton modifier (visible seulement dans les 5 minutes) */}
+                            {canEditConsultation(c) && editingConsultationId !== c.id && (
+                              <button
+                                onClick={() => handleStartEditNotes(c)}
+                                className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200 transition-colors"
+                              >
+                                Modifier
+                              </button>
+                            )}
                           </div>
-                          <p className="text-sm text-gray-700 ml-6 whitespace-pre-wrap">{c.notes}</p>
+                          
+                          {/* Mode édition */}
+                          {editingConsultationId === c.id ? (
+                            <div className="ml-6 space-y-2">
+                              <textarea
+                                className="w-full p-2 border rounded text-sm"
+                                rows={3}
+                                value={editNotesInputs[c.id] || ''}
+                                onChange={(ev) => setEditNotesInputs(prev => ({ ...prev, [c.id]: ev.target.value }))}
+                                placeholder="Modifier les notes..."
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleSaveEditNotes(c.id)}
+                                  disabled={updatingConsultationId === c.id}
+                                  className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 disabled:opacity-50"
+                                >
+                                  {updatingConsultationId === c.id ? 'Sauvegarde...' : 'Sauvegarder'}
+                                </button>
+                                <button
+                                  onClick={handleCancelEditNotes}
+                                  className="text-xs bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600"
+                                >
+                                  Annuler
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-700 ml-6 whitespace-pre-wrap">{c.notes}</p>
+                          )}
                         </div>
                       )}
                       

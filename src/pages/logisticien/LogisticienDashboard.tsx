@@ -6,6 +6,7 @@ import Layout from '../../components/Layout';
 import LogisticienOverview from './LogisticienOverview';
 import ConsultationsManagement from './ConsultationsManagement';
 import ExamsManagement from './ExamsManagement';
+import ActsManagement from './ActsManagement';
 import StockManagement from './StockManagement';
 import SupplyRequests from './SupplyRequests';
 import RoomTypesManagement from './RoomTypesManagement';
@@ -38,6 +39,15 @@ const LogisticienDashboard: React.FC = () => {
       icon: (
         <svg className="mr-3 h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      )
+    },
+    {
+      name: 'Actes',
+      href: '/logisticien/acts',
+      icon: (
+        <svg className="mr-3 h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
         </svg>
       )
     },
@@ -76,6 +86,7 @@ const LogisticienDashboard: React.FC = () => {
         <Route path="/" element={<LogisticienOverview />} />
         <Route path="/consultations" element={<ConsultationsManagement />} />
         <Route path="/exams" element={<ExamsManagement />} />
+        <Route path="/acts" element={<ActsManagement />} />
         <Route path="/room-types" element={<RoomTypesManagement />} />
         <Route path="/stock" element={<StockManagement />} />
         <Route path="/supply-requests" element={<SupplyRequests />} />

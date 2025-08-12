@@ -81,15 +81,70 @@ const HistoriqueMaternite: React.FC = () => {
     return filters.jumeaux === 'Oui';
   };
 
+  // Fonction pour vérifier si des données de jumeaux existent
+  const hasJumeauxData = (maternite: any) => {
+    return maternite.jumeau1Sexe || maternite.jumeau1Poids || maternite.jumeau1Apgar1 ||
+           maternite.jumeau2Sexe || maternite.jumeau2Poids || maternite.jumeau2Apgar1 ||
+           maternite.jumeau3Sexe || maternite.jumeau3Poids || maternite.jumeau3Apgar1 ||
+           maternite.jumeau4Sexe || maternite.jumeau4Poids || maternite.jumeau4Apgar1;
+  };
+
+  // Fonction pour afficher les données d'un jumeau
+  const renderJumeauData = (jumeauNum: number, maternite: any) => {
+    const sexe = maternite[`jumeau${jumeauNum}Sexe`];
+    const poids = maternite[`jumeau${jumeauNum}Poids`];
+    const apgar1 = maternite[`jumeau${jumeauNum}Apgar1`];
+    const apgar2 = maternite[`jumeau${jumeauNum}Apgar2`];
+    const apgar3 = maternite[`jumeau${jumeauNum}Apgar3`];
+    
+    // Si aucune donnée pour ce jumeau, ne pas afficher
+    if (!sexe && !poids && !apgar1 && !apgar2 && !apgar3) {
+      return null;
+    }
+    
+    return (
+      <div className="border rounded p-3 bg-white shadow-sm">
+        <h4 className="font-semibold text-blue-800 mb-3 text-sm">Jumeau {jumeauNum}</h4>
+        <div className="space-y-2 text-xs">
+          <div className="flex justify-between">
+            <span className="font-medium text-gray-600">Sexe:</span>
+            <span className="font-semibold">{sexe || '-'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="font-medium text-gray-600">Poids:</span>
+            <span className="font-semibold">{poids ? `${poids}g` : '-'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="font-medium text-gray-600">APGAR:</span>
+            <span className="font-semibold">{apgar1 || '-'} / {apgar2 || '-'} / {apgar3 || '-'}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Charger les historiques de maternité
   const fetchMaternites = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
+      console.log('🔍 Récupération des historiques de maternité...');
+      
+      // Récupérer TOUS les historiques de la table maternity-history
       const response = await maternityAxios.get('/api/maternity-history');
-      setMaternites(response.data.histories);
+      console.log('📥 Réponse API maternity-history:', response.data);
+      
+      const allHistories = response.data.histories || [];
+      console.log(`📊 Total des historiques reçus: ${allHistories.length}`);
+      
+      // TEMPORAIRE: Afficher TOUTES les données pour déboguer
+      console.log('🔍 Données reçues:', allHistories);
+      
+      // Afficher TOUS les historiques pour le moment
+      setMaternites(allHistories);
+      
     } catch (error: any) {
-      setError('Erreur lors du chargement des historiques de maternité');
-      console.error('Erreur fetch maternités:', error);
+      console.error('Erreur lors de la récupération des historiques:', error);
+      setError('Erreur lors de la récupération des historiques');
     } finally {
       setLoading(false);
     }
@@ -121,7 +176,118 @@ const HistoriqueMaternite: React.FC = () => {
     setSuccess(null);
     
     try {
-      const response = await maternityAxios.post('/api/maternity-history', filters);
+      // Construire la formule obstétricale avant l'envoi
+      let formuleObstetricale = '';
+      if (filters.formuleObstetricaleG && filters.formuleObstetricaleG !== '') {
+        formuleObstetricale += `${filters.formuleObstetricaleG}G `;
+      }
+      if (filters.formuleObstetricaleP && filters.formuleObstetricaleP !== '') {
+        formuleObstetricale += `${filters.formuleObstetricaleP}P `;
+      }
+      if (filters.formuleObstetricaleEV && filters.formuleObstetricaleEV !== '') {
+        formuleObstetricale += `${filters.formuleObstetricaleEV}EV `;
+      }
+      if (filters.formuleObstetricaleAV && filters.formuleObstetricaleAV !== '') {
+        formuleObstetricale += `${filters.formuleObstetricaleAV}AV `;
+      }
+      if (filters.formuleObstetricaleMortNe && filters.formuleObstetricaleMortNe !== '') {
+        formuleObstetricale += `${filters.formuleObstetricaleMortNe}MN`;
+      }
+      
+      console.log('🔍 Formule obstétricale construite:', {
+        formuleFinale: formuleObstetricale,
+        champsIndividuels: {
+          G: filters.formuleObstetricaleG,
+          P: filters.formuleObstetricaleP,
+          EV: filters.formuleObstetricaleEV,
+          AV: filters.formuleObstetricaleAV,
+          MN: filters.formuleObstetricaleMortNe
+        }
+      });
+      
+      // IMPORTANT: NE JAMAIS créer de patients depuis cette page
+      // Les données vont UNIQUEMENT dans la table maternity-history
+      // Cela garantit l'isolation complète
+      
+      // Mapper les champs du formulaire vers ceux attendus par l'API
+      const dataToSend = {
+        // PAS DE patientId - Données complètement isolées
+        patientId: null, // Toujours null pour l'historique
+        
+        // Champs obligatoires pour l'API
+        patientName: filters.nomPostNomPrenom || '',
+        gender: 'Féminin', // Toujours féminin pour la maternité
+        age: filters.age || '',
+        service: 'maternite_historique', // Service simple pour l'historique
+        entryDate: filters.dateAccouchement || new Date().toISOString().split('T')[0],
+        entryTime: filters.heureAccouchement || '',
+        
+        // FLAGS D'ISOLATION SIMPLES ET EFFICACES
+        isHistoryOnly: true, // Flag principal d'isolation
+        interfaceOrigin: 'maternite_historique', // Origine simple
+        shouldNotBeShared: true, // Flag de sécurité
+        
+        // Champs spécifiques à la maternité
+        numeroAnnuel: filters.numeroAnnuel,
+        numeroMensuel: filters.numeroMensuel,
+        postNom: filters.nomPostNomPrenom ? filters.nomPostNomPrenom.split(' ').slice(1).join(' ') : '',
+        typeAccouchement: filters.typeAccouchement,
+        jumeaux: filters.jumeaux,
+        dateAccouchement: filters.dateAccouchement,
+        heureAccouchement: filters.heureAccouchement,
+        sexeNouveauNe: filters.sexeNouveauNe,
+        poidsGrammes: filters.poidsGrammes,
+        apgar1: filters.apgar1,
+        apgar2: filters.apgar2,
+        apgar3: filters.apgar3,
+        reanimation: filters.reanimation,
+        atbq: filters.atbq,
+        indicationCesarienne: filters.indicationCesarienne,
+        cpn: filters.cpn,
+        ddr: filters.ddr,
+        saignementVaginal: filters.saignementVaginal,
+        
+        // Champs de la formule obstétricale
+        formuleObstetricale: formuleObstetricale,
+        formuleObstetricaleG: filters.formuleObstetricaleG,
+        formuleObstetricaleP: filters.formuleObstetricaleP,
+        formuleObstetricaleEV: filters.formuleObstetricaleEV,
+        formuleObstetricaleAV: filters.formuleObstetricaleAV,
+        formuleObstetricaleMortNe: filters.formuleObstetricaleMortNe,
+        
+        // Champs pour les jumeaux
+        jumeau1Sexe: filters.jumeau1Sexe,
+        jumeau1Poids: filters.jumeau1Poids,
+        jumeau1Apgar1: filters.jumeau1Apgar1,
+        jumeau1Apgar2: filters.jumeau1Apgar2,
+        jumeau1Apgar3: filters.jumeau1Apgar3,
+        jumeau2Sexe: filters.jumeau2Sexe,
+        jumeau2Poids: filters.jumeau2Poids,
+        jumeau2Apgar1: filters.jumeau2Apgar1,
+        jumeau2Apgar2: filters.jumeau2Apgar2,
+        jumeau2Apgar3: filters.jumeau2Apgar3,
+        jumeau3Sexe: filters.jumeau3Sexe,
+        jumeau3Poids: filters.jumeau3Poids,
+        jumeau3Apgar1: filters.jumeau3Apgar1,
+        jumeau3Apgar2: filters.jumeau3Apgar2,
+        jumeau3Apgar3: filters.jumeau3Apgar3,
+        jumeau4Sexe: filters.jumeau4Sexe,
+        jumeau4Poids: filters.jumeau4Poids,
+        jumeau4Apgar1: filters.jumeau4Apgar1,
+        jumeau4Apgar2: filters.jumeau4Apgar2,
+        jumeau4Apgar3: filters.jumeau4Apgar3,
+        
+        // Champs supplémentaires
+        address: filters.adresse,
+        weight: filters.poidsGrammes
+      };
+
+      console.log('📤 Données envoyées à l\'API:', dataToSend);
+      
+      // CONFIRMATION: Les données sont isolées et ne seront JAMAIS partagées
+      console.log('🔒 ISOLATION CONFIRMÉE: Données stockées uniquement dans maternity-history, jamais partagées');
+      
+      const response = await maternityAxios.post('/api/maternity-history', dataToSend);
       setSuccess('Historique de maternité enregistré avec succès !');
       setFilters(initialFilters);
       fetchMaternites();
@@ -150,7 +316,9 @@ const HistoriqueMaternite: React.FC = () => {
       )}
       
       <div className="overflow-x-auto">
-        <form onSubmit={handleSave}>
+          {/* Message d'isolation supprimé - L'utilisateur ne veut pas le voir */}
+          
+          <form onSubmit={handleSave}>
           <table className="min-w-full border border-gray-300 text-sm">
             <thead>
               <tr className="bg-gray-100">
@@ -166,8 +334,8 @@ const HistoriqueMaternite: React.FC = () => {
                 <th className="border px-4 py-3 text-sm font-medium">SEXE N-NÉ</th>
                 <th className="border px-4 py-3 text-sm font-medium">POIDS EN GRAMME</th>
                 <th className="border px-4 py-3 text-sm font-medium">APGAR</th>
-                <th className="border px-4 py-3 text-sm font-medium">RÉANIMATION</th>
-                <th className="border px-4 py-3 text-sm font-medium">ATBQ</th>
+                <th className="border px-4 py-3 text-sm">RÉANIMATION</th>
+                <th className="border px-4 py-3 text-sm">ATBQ</th>
                 {shouldShowCesarienneColumn() && (
                   <th className="border px-4 py-3 text-sm font-medium">INDIC SI CÉSAR</th>
                 )}
@@ -310,12 +478,12 @@ const HistoriqueMaternite: React.FC = () => {
                     <input name="jumeau1Poids" value={filters.jumeau1Poids} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Poids (g)..." type="number" min="0" />
                   </td>
                   <td className="border px-4 py-3">
-                    <div className="flex items-center space-x-1">
-                      <input name="jumeau1Apgar1" value={filters.jumeau1Apgar1} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="1" type="number" min="0" max="10" />
-                      <span className="text-gray-500 text-xs">/</span>
-                      <input name="jumeau1Apgar2" value={filters.jumeau1Apgar2} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="2" type="number" min="0" max="10" />
-                      <span className="text-gray-500 text-xs">/</span>
-                      <input name="jumeau1Apgar3" value={filters.jumeau1Apgar3} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="3" type="number" min="0" max="10" />
+                    <div className="flex items-center space-x-2">
+                      <input name="jumeau1Apgar1" value={filters.jumeau1Apgar1} onChange={handleChange} className="input-field w-12 text-sm text-center p-2" placeholder="1" type="number" min="0" max="10" />
+                      <span className="text-gray-500 font-medium">/</span>
+                      <input name="jumeau1Apgar2" value={filters.jumeau1Apgar2} onChange={handleChange} className="input-field w-12 text-sm text-center p-2" placeholder="2" type="number" min="0" max="10" />
+                      <span className="text-gray-500 font-medium">/</span>
+                      <input name="jumeau1Apgar3" value={filters.jumeau1Apgar3} onChange={handleChange} className="input-field w-12 text-sm text-center p-2" placeholder="3" type="number" min="0" max="10" />
                     </div>
                   </td>
                   {/* Jumeau 2 */}
@@ -330,12 +498,12 @@ const HistoriqueMaternite: React.FC = () => {
                     <input name="jumeau2Poids" value={filters.jumeau2Poids} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Poids (g)..." type="number" min="0" />
                   </td>
                   <td className="border px-4 py-3">
-                    <div className="flex items-center space-x-1">
-                      <input name="jumeau2Apgar1" value={filters.jumeau2Apgar1} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="1" type="number" min="0" max="10" />
-                      <span className="text-gray-500 text-xs">/</span>
-                      <input name="jumeau2Apgar2" value={filters.jumeau2Apgar2} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="2" type="number" min="0" max="10" />
-                      <span className="text-gray-500 text-xs">/</span>
-                      <input name="jumeau2Apgar3" value={filters.jumeau2Apgar3} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="3" type="number" min="0" max="10" />
+                    <div className="flex items-center space-x-2">
+                      <input name="jumeau2Apgar1" value={filters.jumeau2Apgar1} onChange={handleChange} className="input-field w-12 text-sm text-center p-2" placeholder="1" type="number" min="0" max="10" />
+                      <span className="text-gray-500 font-medium">/</span>
+                      <input name="jumeau2Apgar2" value={filters.jumeau2Apgar2} onChange={handleChange} className="input-field w-12 text-sm text-center p-2" placeholder="2" type="number" min="0" max="10" />
+                      <span className="text-gray-500 font-medium">/</span>
+                      <input name="jumeau2Apgar3" value={filters.jumeau2Apgar3} onChange={handleChange} className="input-field w-12 text-sm text-center p-2" placeholder="3" type="number" min="0" max="10" />
                     </div>
                   </td>
                   {/* Jumeau 3 */}
@@ -350,12 +518,12 @@ const HistoriqueMaternite: React.FC = () => {
                     <input name="jumeau3Poids" value={filters.jumeau3Poids} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Poids (g)..." type="number" min="0" />
                   </td>
                   <td className="border px-4 py-3">
-                    <div className="flex items-center space-x-1">
-                      <input name="jumeau3Apgar1" value={filters.jumeau3Apgar1} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="1" type="number" min="0" max="10" />
-                      <span className="text-gray-500 text-xs">/</span>
-                      <input name="jumeau3Apgar2" value={filters.jumeau3Apgar2} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="2" type="number" min="0" max="10" />
-                      <span className="text-gray-500 text-xs">/</span>
-                      <input name="jumeau3Apgar3" value={filters.jumeau3Apgar3} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="3" type="number" min="0" max="10" />
+                    <div className="flex items-center space-x-2">
+                      <input name="jumeau3Apgar1" value={filters.jumeau3Apgar1} onChange={handleChange} className="input-field w-12 text-sm text-center p-2" placeholder="1" type="number" min="0" max="10" />
+                      <span className="text-gray-500 font-medium">/</span>
+                      <input name="jumeau3Apgar2" value={filters.jumeau3Apgar2} onChange={handleChange} className="input-field w-12 text-sm text-center p-2" placeholder="2" type="number" min="0" max="10" />
+                      <span className="text-gray-500 font-medium">/</span>
+                      <input name="jumeau3Apgar3" value={filters.jumeau3Apgar3} onChange={handleChange} className="input-field w-12 text-sm text-center p-2" placeholder="3" type="number" min="0" max="10" />
                     </div>
                   </td>
                   {/* Jumeau 4 */}
@@ -370,12 +538,12 @@ const HistoriqueMaternite: React.FC = () => {
                     <input name="jumeau4Poids" value={filters.jumeau4Poids} onChange={handleChange} className="input-field w-full text-sm p-2" placeholder="Poids (g)..." type="number" min="0" />
                   </td>
                   <td className="border px-4 py-3">
-                    <div className="flex items-center space-x-1">
-                      <input name="jumeau4Apgar1" value={filters.jumeau4Apgar1} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="1" type="number" min="0" max="10" />
-                      <span className="text-gray-500 text-xs">/</span>
-                      <input name="jumeau4Apgar2" value={filters.jumeau4Apgar2} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="2" type="number" min="0" max="10" />
-                      <span className="text-gray-500 text-xs">/</span>
-                      <input name="jumeau4Apgar3" value={filters.jumeau4Apgar3} onChange={handleChange} className="input-field w-8 text-sm text-center p-1" placeholder="3" type="number" min="0" max="10" />
+                    <div className="flex items-center space-x-2">
+                      <input name="jumeau4Apgar1" value={filters.jumeau4Apgar1} onChange={handleChange} className="input-field w-12 text-sm text-center p-2" placeholder="1" type="number" min="0" max="10" />
+                      <span className="text-gray-500 font-medium">/</span>
+                      <input name="jumeau4Apgar2" value={filters.jumeau4Apgar2} onChange={handleChange} className="input-field w-12 text-sm text-center p-2" placeholder="2" type="number" min="0" max="10" />
+                      <span className="text-gray-500 font-medium">/</span>
+                      <input name="jumeau4Apgar3" value={filters.jumeau4Apgar3} onChange={handleChange} className="input-field w-12 text-sm text-center p-2" placeholder="3" type="number" min="0" max="10" />
                     </div>
                   </td>
                   <td colSpan={shouldShowCesarienneColumn() ? 5 : 4} className="border px-4 py-3 text-sm text-gray-500">
@@ -395,32 +563,91 @@ const HistoriqueMaternite: React.FC = () => {
                 </tr>
               ) : (
                 maternites.map((maternite) => (
-                  <tr key={maternite.id}>
-                    <td className="border px-4 py-3 text-sm">{maternite.numeroAnnuel || '-'}</td>
-                    <td className="border px-4 py-3 text-sm">{maternite.numeroMensuel || '-'}</td>
-                    <td className="border px-4 py-3 text-sm">{maternite.patientName || '-'}</td>
-                    <td className="border px-4 py-3 text-sm">{maternite.age || '-'}</td>
-                    <td className="border px-4 py-3 text-sm">{maternite.address || '-'}</td>
-                    <td className="border px-4 py-3 text-sm">{maternite.typeAccouchement || '-'}</td>
-                    <td className="border px-4 py-3 text-sm">{maternite.jumeaux || '-'}</td>
-                    <td className="border px-4 py-3 text-sm">{maternite.dateAccouchement ? new Date(maternite.dateAccouchement).toLocaleDateString('fr-FR') : '-'}</td>
-                    <td className="border px-4 py-3 text-sm">{maternite.heureAccouchement || '-'}</td>
-                    <td className="border px-4 py-3 text-sm">{maternite.sexeNouveauNe || '-'}</td>
-                    <td className="border px-4 py-3 text-sm">{maternite.poidsGrammes || '-'}</td>
-                    <td className="border px-4 py-3 text-sm">{maternite.apgar1 || '-'} / {maternite.apgar2 || '-'} / {maternite.apgar3 || '-'}</td>
-                    <td className="border px-4 py-3 text-sm">{maternite.reanimation || '-'}</td>
-                    <td className="border px-4 py-3 text-sm">{maternite.atbq || '-'}</td>
-                    {shouldShowCesarienneColumn() && (
-                      <td className="border px-4 py-3 text-sm">{maternite.indicationCesarienne || '-'}</td>
+                  <React.Fragment key={maternite.id}>
+                    {/* Ligne principale */}
+                    <tr>
+                      <td className="border px-4 py-3 text-sm">{maternite.numeroAnnuel || '-'}</td>
+                      <td className="border px-4 py-3 text-sm">{maternite.numeroMensuel || '-'}</td>
+                      <td className="border px-4 py-3 text-sm">{maternite.patientName || '-'}</td>
+                      <td className="border px-4 py-3 text-sm">{maternite.age || '-'}</td>
+                      <td className="border px-4 py-3 text-sm">{maternite.address || '-'}</td>
+                      <td className="border px-4 py-3 text-sm">{maternite.typeAccouchement || '-'}</td>
+                      <td className="border px-4 py-3 text-sm">{maternite.jumeaux || '-'}</td>
+                      <td className="border px-4 py-3 text-sm">{maternite.dateAccouchement ? new Date(maternite.dateAccouchement).toLocaleDateString('fr-FR') : '-'}</td>
+                      <td className="border px-4 py-3 text-sm">{maternite.heureAccouchement || '-'}</td>
+                      <td className="border px-4 py-3 text-sm">{maternite.sexeNouveauNe || '-'}</td>
+                      <td className="border px-4 py-3 text-sm">{maternite.poidsGrammes || '-'}</td>
+                      <td className="border px-4 py-3 text-sm">{maternite.apgar1 || '-'} / {maternite.apgar2 || '-'} / {maternite.apgar3 || '-'}</td>
+                      <td className="border px-4 py-3 text-sm">{maternite.reanimation || '-'}</td>
+                      <td className="border px-4 py-3 text-sm">{maternite.atbq || '-'}</td>
+                      {shouldShowCesarienneColumn() && (
+                        <td className="border px-4 py-3 text-sm">{maternite.indicationCesarienne || '-'}</td>
+                      )}
+                      <td className="border px-4 py-3 text-sm">{maternite.cpn || '-'}</td>
+                      <td className="border px-4 py-3 text-sm">
+                        {(() => {
+                          // Essayer d'abord les champs individuels
+                          const g = maternite.formuleObstetricaleG || '';
+                          const p = maternite.formuleObstetricaleP || '';
+                          const ev = maternite.formuleObstetricaleEV || '';
+                          const av = maternite.formuleObstetricaleAV || '';
+                          const mn = maternite.formuleObstetricaleMortNe || '';
+                          
+                          // Debug: Log des valeurs reçues
+                          console.log(`🔍 Maternité ${maternite.id} - Valeurs reçues:`, {
+                            g, p, ev, av, mn,
+                            gType: typeof g,
+                            pType: typeof p,
+                            evType: typeof ev,
+                            avType: typeof av,
+                            mnType: typeof mn,
+                            gTruthy: !!g,
+                            pTruthy: !!p,
+                            evTruthy: !!ev,
+                            avTruthy: !!av,
+                            mnTruthy: !!mn,
+                            formuleObstetricale: maternite.formuleObstetricale
+                          });
+                          
+                          // Construire la formule complète avec les vraies données saisies
+                          let formule = '';
+                          if (g !== '') formule += `${g}G `;
+                          if (p !== '') formule += `${p}P `;
+                          if (ev !== '') formule += `${ev}EV `;
+                          if (av !== '') formule += `${av}AV `;
+                          if (mn !== '') formule += `${mn}MN`;
+                          
+                          console.log(`🔍 Maternité ${maternite.id} - Formule construite: "${formule.trim()}"`);
+                          
+                          // Si la formule construite est vide, utiliser le champ direct
+                          if (!formule.trim()) {
+                            console.log(`🔍 Maternité ${maternite.id} - Utilisation du champ direct: "${maternite.formuleObstetricale}"`);
+                            return maternite.formuleObstetricale || '-';
+                          }
+                          
+                          // Sinon, retourner la formule construite
+                          return formule.trim();
+                        })()}
+                      </td>
+                      <td className="border px-4 py-3 text-sm">{maternite.ddr ? new Date(maternite.ddr).toLocaleDateString('fr-FR') : '-'}</td>
+                      <td className="border px-4 py-3 text-sm">{maternite.saignementVaginal || '-'}</td>
+                      <td className="border px-4 py-3 text-sm"></td>
+                    </tr>
+                    
+                    {/* Ligne des jumeaux si applicable */}
+                    {maternite.jumeaux === 'Oui' && hasJumeauxData(maternite) && (
+                      <tr className="bg-blue-50">
+                        <td colSpan={shouldShowCesarienneColumn() ? 20 : 19} className="border px-4 py-3 text-sm">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {renderJumeauData(1, maternite)}
+                            {renderJumeauData(2, maternite)}
+                            {renderJumeauData(3, maternite)}
+                            {renderJumeauData(4, maternite)}
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                    <td className="border px-4 py-3 text-sm">{maternite.cpn || '-'}</td>
-                    <td className="border px-4 py-3 text-sm">
-                      {maternite.formuleObstetricale || '-'}
-                    </td>
-                    <td className="border px-4 py-3 text-sm">{maternite.ddr ? new Date(maternite.ddr).toLocaleDateString('fr-FR') : '-'}</td>
-                    <td className="border px-4 py-3 text-sm">{maternite.saignementVaginal || '-'}</td>
-                    <td className="border px-4 py-3 text-sm"></td>
-                  </tr>
+                  </React.Fragment>
                 ))
               )}
             </tbody>

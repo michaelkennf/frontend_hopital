@@ -52,7 +52,7 @@ const MedicationsListHospitalisation: React.FC = () => {
       const res = await axios.get('/api/medications/sales');
       // On ne garde que les ventes des patients hospitalisation
       const hospRes = await axios.get('/api/hospitalizations');
-      const hospHosp = hospRes.data.hospitalizations.filter((h: any) => h.roomType && h.roomType.toLowerCase().includes('hospitalisation'));
+      const hospHosp = hospRes.data.hospitalizations.filter((h: any) => h.roomType && h.roomType.name && h.roomType.name.toLowerCase().includes('hospitalisation'));
       const hospPatientIds = hospHosp.map((h: any) => h.patientId);
       setSales((res.data.sales || []).filter((s: any) => hospPatientIds.includes(s.patient.id)));
     } catch (e) {

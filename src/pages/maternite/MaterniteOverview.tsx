@@ -27,11 +27,19 @@ const MaterniteOverview: React.FC = () => {
         const patientsRes = await axios.get('/api/patients?service=maternite');
         const patients = patientsRes.data.patients || [];
 
-        // Récupérer les hospitalisations maternité
+        // Récupérer les hospitalisations maternité avec protection complète
         const hospRes = await axios.get('/api/hospitalizations');
-        const hospitalizations = hospRes.data.hospitalizations.filter((h: any) => 
-          h.roomType && h.roomType.toLowerCase().includes('maternité')
-        );
+        const hospitalizations = hospRes.data.hospitalizations.filter((h: any) => {
+          try {
+            // Vérifier si roomType existe et a une propriété name
+            if (!h || !h.roomType || !h.roomType.name) return false;
+            
+            return h.roomType.name.toLowerCase().includes('maternité');
+          } catch (error) {
+            console.error('Erreur lors du filtrage des hospitalisations:', error);
+            return false;
+          }
+        });
 
         // Récupérer l'historique maternité
         const historyRes = await axios.get('/api/maternity-history');
@@ -48,8 +56,12 @@ const MaterniteOverview: React.FC = () => {
           (p.createdAt || '').slice(0, 10) === todayStr
         ).length;
         const monthPatients = patients.filter((p: any) => {
-          const created = new Date(p.createdAt);
-          return created >= lastMonth && created <= now;
+          try {
+            const created = new Date(p.createdAt);
+            return created >= lastMonth && created <= now;
+          } catch (error) {
+            return false;
+          }
         }).length;
 
         // Statistiques des hospitalisations
@@ -58,8 +70,12 @@ const MaterniteOverview: React.FC = () => {
           (h.startDate || '').slice(0, 10) === todayStr
         ).length;
         const monthHospitalizations = hospitalizations.filter((h: any) => {
-          const startDate = new Date(h.startDate);
-          return startDate >= lastMonth && startDate <= now;
+          try {
+            const startDate = new Date(h.startDate);
+            return startDate >= lastMonth && startDate <= now;
+          } catch (error) {
+            return false;
+          }
         }).length;
 
         // Statistiques de l'historique
@@ -68,8 +84,12 @@ const MaterniteOverview: React.FC = () => {
           (h.entryDate || '').slice(0, 10) === todayStr
         ).length;
         const monthHistory = history.filter((h: any) => {
-          const entryDate = new Date(h.entryDate);
-          return entryDate >= lastMonth && entryDate <= now;
+          try {
+            const entryDate = new Date(h.entryDate);
+            return entryDate >= lastMonth && entryDate <= now;
+          } catch (error) {
+            return false;
+          }
         }).length;
 
         // Utiliser les statistiques des patients comme statistiques principales
@@ -177,4 +197,4 @@ const MaterniteOverview: React.FC = () => {
   );
 };
 
-export default MaterniteOverview; 
+export default MaterniteOverview;

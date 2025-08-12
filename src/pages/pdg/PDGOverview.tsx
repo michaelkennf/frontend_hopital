@@ -6,7 +6,7 @@ const PDGOverview: React.FC = () => {
   const [patientCount, setPatientCount] = useState<number | null>(null);
   const [lowStockCount, setLowStockCount] = useState<number | null>(null);
   const [revenue, setRevenue] = useState<number | null>(null);
-  const [revenueByType, setRevenueByType] = useState({ consultation: 0, exam: 0, medication: 0, hospitalization: 0 });
+  const [revenueByType, setRevenueByType] = useState({ consultation: 0, exam: 0, medication: 0, hospitalization: 0, act: 0 });
   const [pendingSupplyRequests, setPendingSupplyRequests] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,7 +19,7 @@ const PDGOverview: React.FC = () => {
       setPatientCount(res.data.patientCount ?? 0);
       setLowStockCount(res.data.lowStockCount ?? 0);
       setRevenue(res.data.revenue ?? 0);
-      setRevenueByType(res.data.revenueByType ?? { consultation: 0, exam: 0, medication: 0, hospitalization: 0 });
+      setRevenueByType(res.data.revenueByType ?? { consultation: 0, exam: 0, medication: 0, hospitalization: 0, act: 0 });
       setPendingSupplyRequests(res.data.pendingSupplyRequests ?? 0);
       } catch {
         setEmployeeCount(0);
@@ -38,6 +38,31 @@ const PDGOverview: React.FC = () => {
     const interval = setInterval(fetchStats, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Fonctions pour séparer les devises
+  const calculateRevenueByCurrency = () => {
+    const consultationAmountFC = revenueByType.consultation || 0;
+    const otherAmountUSD = (revenueByType.exam || 0) + 
+                           (revenueByType.medication || 0) + 
+                           (revenueByType.hospitalization || 0) + 
+                           (revenueByType.act || 0);
+    
+    return { consultationAmountFC, otherAmountUSD };
+  };
+
+  const formatTotalRevenue = () => {
+    const { consultationAmountFC, otherAmountUSD } = calculateRevenueByCurrency();
+    
+    if (consultationAmountFC > 0 && otherAmountUSD > 0) {
+      return `${consultationAmountFC.toLocaleString('fr-FR')} FC + ${otherAmountUSD.toLocaleString('fr-FR')} $`;
+    } else if (consultationAmountFC > 0) {
+      return `${consultationAmountFC.toLocaleString('fr-FR')} FC`;
+    } else if (otherAmountUSD > 0) {
+      return `${otherAmountUSD.toLocaleString('fr-FR')} $`;
+    } else {
+      return '0 $';
+    }
+  };
 
   return (
     <div>
@@ -102,12 +127,13 @@ const PDGOverview: React.FC = () => {
               </svg>
               <div>
                 <div className="text-sm font-medium text-gray-500 truncate">Chiffre d'affaires</div>
-                <div className="text-lg font-medium text-gray-900">{revenue?.toLocaleString('fr-FR', { style: 'currency', currency: 'USD' })}</div>
+                <div className="text-lg font-medium text-gray-900">{formatTotalRevenue()}</div>
                 <div className="mt-2 text-xs text-gray-500">
-                  <div>Consultations : <span className="font-semibold text-gray-700">{revenueByType.consultation.toLocaleString('fr-FR', { style: 'currency', currency: 'USD' })}</span></div>
-                  <div>Examens : <span className="font-semibold text-gray-700">{revenueByType.exam.toLocaleString('fr-FR', { style: 'currency', currency: 'USD' })}</span></div>
-                  <div>Médicaments : <span className="font-semibold text-gray-700">{revenueByType.medication.toLocaleString('fr-FR', { style: 'currency', currency: 'USD' })}</span></div>
-                  <div>Hospitalisations : <span className="font-semibold text-gray-700">{revenueByType.hospitalization.toLocaleString('fr-FR', { style: 'currency', currency: 'USD' })}</span></div>
+                  <div>Consultations : <span className="font-semibold text-gray-700">{revenueByType.consultation.toLocaleString('fr-FR')} FC</span></div>
+                  <div>Examens : <span className="font-semibold text-gray-700">{revenueByType.exam.toLocaleString('fr-FR')} $</span></div>
+                  <div>Actes : <span className="font-semibold text-gray-700">{revenueByType.act.toLocaleString('fr-FR')} $</span></div>
+                  <div>Médicaments : <span className="font-semibold text-gray-700">{revenueByType.medication.toLocaleString('fr-FR')} $</span></div>
+                  <div>Hospitalisations : <span className="font-semibold text-gray-700">{revenueByType.hospitalization.toLocaleString('fr-FR')} $</span></div>
                 </div>
               </div>
             </div>

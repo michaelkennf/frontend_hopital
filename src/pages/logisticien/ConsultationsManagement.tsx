@@ -131,7 +131,7 @@ const ConsultationsManagement: React.FC = () => {
         />
         <input
           className="input-field"
-          placeholder="Prix"
+          placeholder="Prix (FC)"
           type="number"
           min="0"
           step="0.01"
@@ -151,7 +151,7 @@ const ConsultationsManagement: React.FC = () => {
           <thead>
             <tr className="bg-gray-100">
               <th className="p-2">Nom</th>
-              <th className="p-2">Prix ($)</th>
+              <th className="p-2">Prix (FC)</th>
                               <th className="p-2">Stock</th>
             </tr>
           </thead>
@@ -159,7 +159,7 @@ const ConsultationsManagement: React.FC = () => {
             {types.map(type => (
               <tr key={type.id} className="border-b">
                 <td className="p-2 font-medium">{type.name}</td>
-                <td className="p-2">{type.price.toFixed(2)}</td>
+                <td className="p-2">{type.price.toFixed(2)} FC</td>
                 <td className="p-2 flex gap-2">
                   <button
                     className="btn-secondary"
@@ -224,7 +224,7 @@ const ConsultationsManagement: React.FC = () => {
               />
               <input
                 className="input-field"
-                placeholder="Prix"
+                placeholder="Prix (FC)"
                 type="number"
                 min="0"
                 step="0.01"

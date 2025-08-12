@@ -8,6 +8,7 @@ import CaissierOverview from './CaissierOverview';
 import PatientsManagement from './PatientsManagement';
 import ConsultationsList from './ConsultationsList';
 import ExamsList from './ExamsList';
+import ActsList from './ActsList';
 import MedicationsList from './MedicationsList';
 import Invoices from './Invoices';
 import Settings from '../admin/Settings';
@@ -52,6 +53,15 @@ const CaissierDashboard: React.FC = () => {
       )
     },
     {
+      name: 'Actes',
+      href: '/caissier/acts',
+      icon: (
+        <svg className="mr-3 h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      )
+    },
+    {
       name: 'Médicaments',
       href: '/caissier/medications',
       icon: (
@@ -79,6 +89,7 @@ const CaissierDashboard: React.FC = () => {
           <Route path="/patients" element={<PatientsManagement />} />
           <Route path="/consultations" element={<ConsultationsList />} />
           <Route path="/exams" element={<ExamsList />} />
+          <Route path="/acts" element={<ActsList />} />
           <Route path="/medications" element={<MedicationsList />} />
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/settings" element={<Settings />} />

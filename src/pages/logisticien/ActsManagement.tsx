@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-interface ExamType {
+interface ActType {
   id: number;
   name: string;
   price: number;
 }
 
-const ExamsManagement: React.FC = () => {
-  const [types, setTypes] = useState<ExamType[]>([]);
+const ActsManagement: React.FC = () => {
+  const [types, setTypes] = useState<ActType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -17,7 +17,7 @@ const ExamsManagement: React.FC = () => {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [editType, setEditType] = useState<ExamType | null>(null);
+  const [editType, setEditType] = useState<ActType | null>(null);
   const [editName, setEditName] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editError, setEditError] = useState<string | null>(null);
@@ -27,10 +27,10 @@ const ExamsManagement: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get('/api/exams');
-      setTypes(res.data.examTypes || []);
+      const res = await axios.get('/api/acts');
+      setTypes(res.data.actTypes || []);
     } catch (e: any) {
-      setError('Erreur lors du chargement des types d\'examens');
+      setError('Erreur lors du chargement des types d\'actes');
     } finally {
       setLoading(false);
     }
@@ -45,7 +45,7 @@ const ExamsManagement: React.FC = () => {
     setAdding(true);
     setError(null);
     try {
-      await axios.post('/api/exams/types', {
+      await axios.post('/api/acts/types', {
         name,
         price: parseFloat(price)
       });
@@ -75,7 +75,7 @@ const ExamsManagement: React.FC = () => {
     if (!deletingId) return;
     setDeleteError(null);
     try {
-      await axios.delete(`/api/exams/types/${deletingId}`);
+      await axios.delete(`/api/acts/types/${deletingId}`);
       closeDelete();
       fetchTypes();
     } catch (e: any) {
@@ -83,7 +83,7 @@ const ExamsManagement: React.FC = () => {
     }
   };
 
-  const openEdit = (type: ExamType) => {
+  const openEdit = (type: ActType) => {
     setEditType(type);
     setEditName(type.name);
     setEditPrice(type.price.toString());
@@ -104,7 +104,7 @@ const ExamsManagement: React.FC = () => {
     setEditing(true);
     setEditError(null);
     try {
-      await axios.patch(`/api/exams/types/${editType.id}`, {
+      await axios.patch(`/api/acts/types/${editType.id}`, {
         name: editName,
         price: parseFloat(editPrice)
       });
@@ -119,12 +119,12 @@ const ExamsManagement: React.FC = () => {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Types d'examens</h1>
-      <p className="text-gray-600 mb-6">Ajoutez, modifiez ou supprimez les types d'examens disponibles dans le système.</p>
+      <h1 className="text-2xl font-bold mb-4">Types d'actes</h1>
+      <p className="text-gray-600 mb-6">Ajoutez, modifiez ou supprimez les types d'actes médicaux disponibles dans le système.</p>
       <form className="mb-6 flex flex-col md:flex-row gap-2" onSubmit={handleAdd}>
         <input
           className="input-field"
-          placeholder="Nom"
+          placeholder="Nom de l'acte"
           value={name}
           onChange={e => setName(e.target.value)}
           required
@@ -150,9 +150,9 @@ const ExamsManagement: React.FC = () => {
         <table className="min-w-full text-sm bg-white shadow rounded">
           <thead>
             <tr className="bg-gray-100">
-              <th className="p-2">Nom</th>
+              <th className="p-2">Nom de l'acte</th>
               <th className="p-2">Prix ($)</th>
-                              <th className="p-2">Stock</th>
+              <th className="p-2">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -189,7 +189,7 @@ const ExamsManagement: React.FC = () => {
               onClick={closeDelete}
             >✕</button>
             <h2 className="text-lg font-bold mb-4 text-red-700">Confirmer la suppression</h2>
-            <p className="mb-4">Voulez-vous vraiment supprimer ce type d'examen ? Cette action est irréversible.</p>
+            <p className="mb-4">Voulez-vous vraiment supprimer ce type d'acte ? Cette action est irréversible.</p>
             {deleteError && <div className="bg-red-100 text-red-700 p-2 mb-2 rounded">{deleteError}</div>}
             <div className="flex gap-2 justify-end">
               <button className="btn-secondary" onClick={closeDelete}>Annuler</button>
@@ -213,11 +213,11 @@ const ExamsManagement: React.FC = () => {
               style={{ zIndex: 10000, background: '#fff' }}
               onClick={closeEdit}
             >✕</button>
-            <h2 className="text-lg font-bold mb-4">Modifier le type d'examen</h2>
+            <h2 className="text-lg font-bold mb-4">Modifier le type d'acte</h2>
             <form onSubmit={handleEdit} className="flex flex-col gap-3">
               <input
                 className="input-field"
-                placeholder="Nom"
+                placeholder="Nom de l'acte"
                 value={editName}
                 onChange={e => setEditName(e.target.value)}
                 required
@@ -247,4 +247,4 @@ const ExamsManagement: React.FC = () => {
   );
 };
 
-export default ExamsManagement; 
+export default ActsManagement; 

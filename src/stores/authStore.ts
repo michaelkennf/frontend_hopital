@@ -59,11 +59,10 @@ axios.interceptors.request.use(
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Supprimer le token en cas d'erreur 401, mais ne pas rediriger automatiquement
-    // Laisser ProtectedRoute gérer la redirection
-    if (error.response?.status === 401) {
+    // Ne supprimer le token que pour les erreurs d'authentification spécifiques
+    // Pas pour toutes les erreurs 401
+    if (error.response?.status === 401 && error.response?.data?.error === 'Token invalide') {
       localStorage.removeItem('auth-token');
-      // Ne pas rediriger ici, laisser ProtectedRoute s'en charger
     }
     return Promise.reject(error);
   }

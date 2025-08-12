@@ -345,15 +345,15 @@ const Invoices: React.FC = () => {
         win.document.write(`<tr>
           <td>${item.description || 'N/A'}</td>
           <td>${item.quantity || 0}</td>
-          <td>${item.unitPrice || 0} $</td>
-          <td>${item.totalPrice || 0} $</td>
+          <td>${item.unitPrice || 0} ${item.type === 'consultation' ? 'FC' : '$'}</td>
+          <td>${item.totalPrice || 0} ${item.type === 'consultation' ? 'FC' : '$'}</td>
         </tr>`);
       });
       
       win.document.write('</tbody></table>');
       
       // Total
-      win.document.write(`<div class="total-section"><strong>TOTAL: ${invoice.totalAmount.toFixed(2)} $</strong></div>`);
+      win.document.write(`<div class="total-section"><strong>TOTAL: ${formatInvoiceAmount(invoice)}</strong></div>`);
       win.document.write('</div>');
       
       // Bas de page institutionnel
@@ -424,6 +424,79 @@ const Invoices: React.FC = () => {
   };
 
   // Filtrage et séparation des factures (à placer avant le return)
+  // Fonction pour calculer le montant par devise
+  const calculateInvoiceAmountByCurrency = (invoice: Invoice) => {
+    let consultationAmountFC = 0;
+    let otherAmountUSD = 0;
+
+    invoice.items.forEach(item => {
+      if (item.type === 'consultation') {
+        consultationAmountFC += item.totalPrice;
+      } else {
+        otherAmountUSD += item.totalPrice;
+      }
+    });
+
+    return { consultationAmountFC, otherAmountUSD };
+  };
+
+  // Fonction pour formater l'affichage du montant
+  const formatInvoiceAmount = (invoice: Invoice) => {
+    const { consultationAmountFC, otherAmountUSD } = calculateInvoiceAmountByCurrency(invoice);
+    
+    if (consultationAmountFC > 0 && otherAmountUSD > 0) {
+      return `${consultationAmountFC.toFixed(2)} FC + ${otherAmountUSD.toFixed(2)} $`;
+    } else if (consultationAmountFC > 0) {
+      return `${consultationAmountFC.toFixed(2)} FC`;
+    } else if (otherAmountUSD > 0) {
+      return `${otherAmountUSD.toFixed(2)} $`;
+    } else {
+      return '0.00 $';
+    }
+  };
+
+  // Fonction pour formater le prix d'un item selon son type
+  const formatItemPrice = (item: InvoiceItem) => {
+    if (item.type === 'consultation') {
+      return `${item.totalPrice} FC`;
+    } else {
+      return `${item.totalPrice} $`;
+    }
+  };
+
+  // Fonction pour formater le prix unitaire d'un item selon son type
+  const formatItemUnitPrice = (item: InvoiceItem) => {
+    if (item.type === 'consultation') {
+      return `${item.unitPrice} FC`;
+    } else {
+      return `${item.unitPrice} $`;
+    }
+  };
+
+  // Fonction pour calculer et formater le total d'édition
+  const formatEditTotal = () => {
+    let consultationAmountFC = 0;
+    let otherAmountUSD = 0;
+
+    editItems.forEach(item => {
+      if (item.type === 'consultation') {
+        consultationAmountFC += item.totalPrice;
+      } else {
+        otherAmountUSD += item.totalPrice;
+      }
+    });
+
+    if (consultationAmountFC > 0 && otherAmountUSD > 0) {
+      return `${consultationAmountFC.toFixed(2)} FC + ${otherAmountUSD.toFixed(2)} $`;
+    } else if (consultationAmountFC > 0) {
+      return `${consultationAmountFC.toFixed(2)} FC`;
+    } else if (otherAmountUSD > 0) {
+      return `${otherAmountUSD.toFixed(2)} $`;
+    } else {
+      return '0.00 $';
+    }
+  };
+
   const filteredInvoices = invoices.filter(inv => {
     const text = `${inv.invoiceNumber} ${inv.patient.folderNumber} ${inv.patient.lastName} ${inv.patient.firstName}`.toLowerCase();
     return text.includes(search.toLowerCase());
@@ -495,7 +568,7 @@ const Invoices: React.FC = () => {
                         <td className="px-4 py-2 font-mono">{inv.invoiceNumber}</td>
                         <td className="px-4 py-2">{inv.patient.firstName} {inv.patient.lastName}</td>
                         <td className="px-4 py-2">{inv.patient.folderNumber}</td>
-                        <td className="px-4 py-2">{inv.totalAmount.toFixed(2)} $</td>
+                        <td className="px-4 py-2">{formatInvoiceAmount(inv)}</td>
                         <td className="px-4 py-2">
                           <span className={
                             inv.status === 'pending' ? 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded' :
@@ -541,8 +614,8 @@ const Invoices: React.FC = () => {
                                   <td>{item.type}</td>
                                   <td>{item.description}</td>
                                   <td>{item.quantity}</td>
-                                  <td>{item.unitPrice} $</td>
-                                  <td>{item.totalPrice} $</td>
+                                  <td>{formatItemUnitPrice(item)}</td>
+                                  <td>{formatItemPrice(item)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -562,7 +635,7 @@ const Invoices: React.FC = () => {
                         <td className="px-4 py-2 font-mono">{inv.invoiceNumber}</td>
                         <td className="px-4 py-2">{inv.patient.firstName} {inv.patient.lastName}</td>
                         <td className="px-4 py-2">{inv.patient.folderNumber}</td>
-                        <td className="px-4 py-2">{inv.totalAmount.toFixed(2)} $</td>
+                        <td className="px-4 py-2">{formatInvoiceAmount(inv)}</td>
                         <td className="px-4 py-2">
                           <span className={
                             inv.status === 'pending' ? 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded' :
@@ -608,8 +681,8 @@ const Invoices: React.FC = () => {
                                   <td>{item.type}</td>
                                   <td>{item.description}</td>
                                   <td>{item.quantity}</td>
-                                  <td>{item.unitPrice} $</td>
-                                  <td>{item.totalPrice} $</td>
+                                  <td>{formatItemUnitPrice(item)}</td>
+                                  <td>{formatItemPrice(item)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -663,7 +736,7 @@ const Invoices: React.FC = () => {
                           <option value="">Sélectionner une consultation</option>
                           {patientConsultations.map(c => (
                             <option key={c.id} value={c.id}>
-                              {c.consultationType.name} - {new Date(c.date).toLocaleDateString('fr-FR')} ({c.consultationType.price} $)
+                              {c.consultationType.name} - {new Date(c.date).toLocaleDateString('fr-FR')} ({c.consultationType.price} FC)
                             </option>
                           ))}
                         </select>
@@ -728,7 +801,7 @@ const Invoices: React.FC = () => {
               </tbody>
             </table>
             <div className="flex justify-between items-center mb-4">
-              <span className="font-bold">Total : {editTotal} $</span>
+              <span className="font-bold">Total : {formatEditTotal()}</span>
               <button className="btn-secondary" onClick={() => setEditInvoice(null)}>Annuler</button>
             </div>
             <button className="btn-primary" onClick={handleEditSave} disabled={editLoading}>{editLoading ? 'Enregistrement...' : 'Enregistrer'}</button>

@@ -1,10 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const ROOM_TYPES = [
-  { label: 'Chambre commune', value: 'Hospitalisation - Chambre commune', price: 1 },
-  { label: 'Chambre privée', value: 'Hospitalisation - Chambre privée', price: 5 },
-];
+const authenticatedAxios = {
+  get: (url: string) => {
+    const token = localStorage.getItem('auth-token');
+    return axios.get(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+  post: (url: string, data: any) => {
+    const token = localStorage.getItem('auth-token');
+    return axios.post(url, data, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+  patch: (url: string, data: any) => {
+    const token = localStorage.getItem('auth-token');
+    return axios.patch(url, data, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  }
+};
 
 function calculateAge(dateNaissance: string) {
   if (!dateNaissance) return '';
@@ -41,7 +63,6 @@ const PatientsManagementHospitalisation: React.FC = () => {
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [editSuccess, setEditSuccess] = useState<string | null>(null);
-  const [roomTypeSearch, setRoomTypeSearch] = useState('');
   const [roomTypes, setRoomTypes] = useState<any[]>([]);
 
   useEffect(() => {
@@ -49,21 +70,11 @@ const PatientsManagementHospitalisation: React.FC = () => {
     fetchRoomTypes();
   }, []);
 
-  const fetchRoomTypes = async () => {
-    try {
-      const res = await axios.get('/api/room-types');
-      setRoomTypes(res.data.roomTypes || []);
-    } catch (e) {
-      setRoomTypes([]);
-    }
-  };
-
   const fetchPatients = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Récupérer directement les patients hospitalisés (HOSP-)
-      const res = await axios.get('/api/patients?service=hospitalisation');
+      const res = await authenticatedAxios.get('/api/patients?service=hospitalisation');
       setPatients(res.data.patients || []);
     } catch (e: any) {
       setError(e.response?.data?.error || 'Erreur lors du chargement des patients hospitalisés');
@@ -72,17 +83,26 @@ const PatientsManagementHospitalisation: React.FC = () => {
     }
   };
 
+  const fetchRoomTypes = async () => {
+    try {
+      const res = await authenticatedAxios.get('/api/room-types');
+      setRoomTypes(res.data.roomTypes || []);
+    } catch (e: any) {
+      console.error('Erreur lors du chargement des types de chambres:', e);
+    }
+  };
+
   const handleOpenForm = () => {
     setForm({
-      nom: '',
-      postNom: '',
-      sexe: '',
-      dateNaissance: '',
-      age: '',
-      poids: '',
-      adresse: '',
+      nom: '', 
+      postNom: '', 
+      sexe: '', 
+      dateNaissance: '', 
+      age: '', 
+      poids: '', 
+      adresse: '', 
       telephone: '',
-      roomType: '',
+      roomType: ''
     });
     setShowForm(true);
     setError(null);
@@ -98,15 +118,31 @@ const PatientsManagementHospitalisation: React.FC = () => {
     setForm(newForm);
   };
 
+  const handleEdit = (patient: any) => {
+    setEditForm({
+      id: patient.id,
+      nom: patient.firstName,
+      postNom: patient.lastName,
+      sexe: patient.gender,
+      dateNaissance: patient.dateOfBirth,
+      age: calculateAge(patient.dateOfBirth),
+      poids: patient.weight,
+      adresse: patient.address,
+      telephone: patient.phone,
+      roomType: patient.hospitalization?.roomTypeId?.toString() || ''
+    });
+    setShowEditForm(true);
+    setEditError(null);
+    setEditSuccess(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setSuccess(null);
-
     try {
-      // 1. Créer le patient
-      const patientRes = await axios.post('/api/patients', {
+      const patientRes = await authenticatedAxios.post('/api/patients', {
         firstName: form.nom,
         lastName: form.postNom,
         sexe: form.sexe,
@@ -114,21 +150,17 @@ const PatientsManagementHospitalisation: React.FC = () => {
         poids: form.poids,
         adresse: form.adresse,
         telephone: form.telephone,
-        interfaceOrigin: 'hospitalisation', // Identifier l'interface d'origine
+        interfaceOrigin: 'hospitalisation',
       });
       
-      const patientId = patientRes.data.id;
+      const patientId = patientRes.data.patient?.id || patientRes.data.id;
       
-      // 2. Hospitaliser immédiatement le patient
-      const selectedRoomType = roomTypes.find(rt => rt.id.toString() === form.roomType);
-      await axios.post('/api/hospitalizations', {
+      const hospitalizationRes = await authenticatedAxios.post('/api/hospitalizations', {
         patientId: patientId,
         roomTypeId: parseInt(form.roomType),
-        days: 1, // Par défaut 1 jour
-        price: selectedRoomType ? selectedRoomType.price : 50000, // Prix du type de chambre ou par défaut
+        entryDate: new Date().toISOString(),
       });
 
-      // 3. Recharger la liste des patients
       await fetchPatients();
       
       setShowForm(false);
@@ -145,16 +177,45 @@ const PatientsManagementHospitalisation: React.FC = () => {
       });
       setSuccess('Patient hospitalisé avec succès !');
       
-      // 4. Rafraîchir la page hospitalisation si elle est ouverte
-      // On va émettre un événement personnalisé pour notifier les autres composants
       window.dispatchEvent(new CustomEvent('patientHospitalized', { 
-        detail: { patientId, roomTypeId: parseInt(form.roomType) } 
+        detail: { 
+          patientId, 
+          roomTypeId: parseInt(form.roomType),
+          hospitalization: hospitalizationRes.data.hospitalization
+        } 
       }));
       
     } catch (e: any) {
       setError(e.response?.data?.error || 'Erreur lors de l\'enregistrement du patient');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditLoading(true);
+    setEditError(null);
+    setEditSuccess(null);
+    try {
+      await authenticatedAxios.patch(`/api/patients/${editForm.id}`, {
+        firstName: editForm.nom,
+        lastName: editForm.postNom,
+        sexe: editForm.sexe,
+        dateNaissance: editForm.dateNaissance,
+        poids: editForm.poids,
+        adresse: editForm.adresse,
+        telephone: editForm.telephone,
+      });
+      
+      await fetchPatients();
+      setShowEditForm(false);
+      setEditForm(null);
+      setEditSuccess('Patient modifié avec succès !');
+    } catch (e: any) {
+      setEditError(e.response?.data?.error || 'Erreur lors de la modification du patient');
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -171,6 +232,7 @@ const PatientsManagementHospitalisation: React.FC = () => {
           + Nouveau patient
         </button>
       </div>
+
       <input
         type="text"
         className="input-field mb-4"
@@ -216,12 +278,7 @@ const PatientsManagementHospitalisation: React.FC = () => {
                     <td className="px-4 py-2">{p.address}</td>
                     <td className="px-4 py-2">{p.phone}</td>
                     <td className="px-4 py-2">
-                      <button className="btn-secondary btn-xs" onClick={() => {
-                        setEditForm({ ...p, sexe: p.gender, dateNaissance: p.dateOfBirth, poids: p.weight, adresse: p.address, telephone: p.phone });
-                        setShowEditForm(true);
-                        setEditError(null);
-                        setEditSuccess(null);
-                      }}>Modifier</button>
+                      <button className="btn-secondary btn-xs" onClick={() => handleEdit(p)}>Modifier</button>
                     </td>
                   </tr>
                 ))}
@@ -286,13 +343,6 @@ const PatientsManagementHospitalisation: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Type de chambre</label>
-                  <input
-                    type="text"
-                    className="input-field mb-1"
-                    placeholder="Rechercher un type de chambre..."
-                    value={roomTypeSearch}
-                    onChange={e => setRoomTypeSearch(e.target.value)}
-                  />
                   <select
                     name="roomType"
                     value={form.roomType}
@@ -300,9 +350,9 @@ const PatientsManagementHospitalisation: React.FC = () => {
                     required
                     className="input-field"
                   >
-                    <option value="">Sélectionner</option>
-                    {roomTypes.filter(rt => rt.name.toLowerCase().includes(roomTypeSearch.toLowerCase())).map(rt => (
-                      <option key={rt.id} value={rt.id}>{rt.name} - ${rt.price.toFixed(2)}</option>
+                    <option value="">Sélectionner un type de chambre</option>
+                    {roomTypes.map(rt => (
+                      <option key={rt.id} value={rt.id}>{rt.name}</option>
                     ))}
                   </select>
                 </div>
@@ -319,6 +369,7 @@ const PatientsManagementHospitalisation: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Formulaire de modification modal */}
       {showEditForm && editForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg relative flex flex-col max-h-[90vh]">
@@ -334,50 +385,19 @@ const PatientsManagementHospitalisation: React.FC = () => {
                 </svg>
               </button>
             </div>
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              setEditLoading(true);
-              setEditError(null);
-              setEditSuccess(null);
-              try {
-                await axios.put(`/api/patients/${editForm.id}`,
-                  {
-                    firstName: editForm.nom,
-                    lastName: editForm.postNom,
-                    sexe: editForm.sexe,
-                    dateNaissance: editForm.dateNaissance,
-                    poids: editForm.poids,
-                    adresse: editForm.adresse,
-                    telephone: editForm.telephone,
-                  }
-                );
-                // Modification du type de chambre si besoin
-                if (editForm.hospitalizationId && editForm.roomType) {
-                  await axios.patch(`/api/hospitalizations/${editForm.hospitalizationId}`, {
-                    roomType: editForm.roomType
-                  });
-                }
-                setEditSuccess('Patient modifié avec succès !');
-                setShowEditForm(false);
-                fetchPatients();
-              } catch (e: any) {
-                setEditError(e.response?.data?.error || 'Erreur lors de la modification du patient');
-              } finally {
-                setEditLoading(false);
-              }
-            }} className="flex-1 flex flex-col justify-between overflow-y-auto px-6 py-4">
+            <form onSubmit={handleEditSubmit} className="flex-1 flex flex-col justify-between overflow-y-auto px-6 py-4">
               <div className="space-y-4 pb-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Nom</label>
-                  <input type="text" name="nom" value={editForm.nom} onChange={e => setEditForm((f: any) => ({ ...f, nom: e.target.value }))} required className="input-field" placeholder="Entrez le nom" />
+                  <label className="block text-sm font-medium text-gray-700">Prénom</label>
+                  <input type="text" name="nom" value={editForm.nom} onChange={e => setEditForm({...editForm, nom: e.target.value})} required className="input-field" placeholder="Entrez le nom" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Post-nom</label>
-                  <input type="text" name="postNom" value={editForm.postNom} onChange={e => setEditForm((f: any) => ({ ...f, postNom: e.target.value }))} required className="input-field" placeholder="Entrez le post-nom" />
+                  <input type="text" name="postNom" value={editForm.postNom} onChange={e => setEditForm({...editForm, postNom: e.target.value})} required className="input-field" placeholder="Entrez le post-nom" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Sexe</label>
-                  <select name="sexe" value={editForm.sexe} onChange={e => setEditForm((f: any) => ({ ...f, sexe: e.target.value }))} required className="input-field">
+                  <select name="sexe" value={editForm.sexe} onChange={e => setEditForm({...editForm, sexe: e.target.value})} required className="input-field">
                     <option value="">Sélectionner</option>
                     <option value="Masculin">Masculin</option>
                     <option value="Féminin">Féminin</option>
@@ -385,7 +405,7 @@ const PatientsManagementHospitalisation: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Date de naissance</label>
-                  <input type="date" name="dateNaissance" value={editForm.dateNaissance} onChange={e => setEditForm((f: any) => ({ ...f, dateNaissance: e.target.value, age: calculateAge(e.target.value) }))} required className="input-field" />
+                  <input type="date" name="dateNaissance" value={editForm.dateNaissance} onChange={e => setEditForm({...editForm, dateNaissance: e.target.value, age: calculateAge(e.target.value)})} required className="input-field" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Âge</label>
@@ -393,35 +413,28 @@ const PatientsManagementHospitalisation: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Poids (kg)</label>
-                  <input type="number" name="poids" value={editForm.poids} onChange={e => setEditForm((f: any) => ({ ...f, poids: e.target.value }))} required min="0" className="input-field" />
+                  <input type="number" name="poids" value={editForm.poids} onChange={e => setEditForm({...editForm, poids: e.target.value})} required min="0" className="input-field" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Adresse physique</label>
-                  <input type="text" name="adresse" value={editForm.adresse} onChange={e => setEditForm((f: any) => ({ ...f, adresse: e.target.value }))} required className="input-field" />
+                  <input type="text" name="adresse" value={editForm.adresse} onChange={e => setEditForm({...editForm, adresse: e.target.value})} required className="input-field" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Numéro de téléphone</label>
-                  <input type="tel" name="telephone" value={editForm.telephone} onChange={e => setEditForm((f: any) => ({ ...f, telephone: e.target.value }))} required className="input-field" />
+                  <input type="tel" name="telephone" value={editForm.telephone} onChange={e => setEditForm({...editForm, telephone: e.target.value})} required className="input-field" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Type de chambre</label>
-                  <input
-                    type="text"
-                    className="input-field mb-1"
-                    placeholder="Rechercher un type de chambre..."
-                    value={roomTypeSearch}
-                    onChange={e => setRoomTypeSearch(e.target.value)}
-                  />
                   <select
                     name="roomType"
-                    value={editForm.roomType || ''}
-                    onChange={e => setEditForm((f: any) => ({ ...f, roomType: e.target.value }))}
+                    value={editForm.roomType}
+                    onChange={e => setEditForm({...editForm, roomType: e.target.value})}
                     required
                     className="input-field"
                   >
-                    <option value="">Sélectionner</option>
-                    {roomTypes.filter(rt => rt.name.toLowerCase().includes(roomTypeSearch.toLowerCase())).map(rt => (
-                      <option key={rt.id} value={rt.id}>{rt.name} - {rt.price.toLocaleString()} FC</option>
+                    <option value="">Sélectionner un type de chambre</option>
+                    {roomTypes.map(rt => (
+                      <option key={rt.id} value={rt.id}>{rt.name}</option>
                     ))}
                   </select>
                 </div>
@@ -444,4 +457,4 @@ const PatientsManagementHospitalisation: React.FC = () => {
   );
 };
 
-export default PatientsManagementHospitalisation; 
+export default PatientsManagementHospitalisation;

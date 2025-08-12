@@ -1,11 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+// Configuration axios avec authentification
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+});
+
+// Intercepteur pour ajouter automatiquement le token d'authentification
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('auth-token');
+    console.log('🔐 Intercepteur de requête - Token trouvé:', token ? 'OUI' : 'NON');
+    console.log('🔐 URL de la requête:', config.url);
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('🔐 Header Authorization ajouté:', `Bearer ${token.substring(0, 20)}...`);
+    } else {
+      console.log('⚠️ Aucun token trouvé dans localStorage');
+    }
+    return config;
+  },
+  (error) => {
+    console.error('❌ Erreur dans l\'intercepteur de requête:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Intercepteur pour gérer les erreurs d'authentification
+api.interceptors.response.use(
+  (response) => {
+    console.log('✅ Réponse reçue avec succès:', response.config.url);
+    return response;
+  },
+  (error) => {
+    console.error('❌ Erreur de réponse:', error.config?.url, 'Status:', error.response?.status);
+    if (error.response?.status === 401) {
+      console.error('🔐 Erreur d\'authentification détectée');
+      console.error('🔐 Headers de la requête:', error.config?.headers);
+      console.error('🔐 Token dans localStorage:', localStorage.getItem('auth-token') ? 'PRÉSENT' : 'ABSENT');
+    }
+    return Promise.reject(error);
+  }
+);
+
 interface Medication {
   id: number;
   name: string;
   unit: string;
   price?: number;
+  purchasePrice?: number; // Prix d'achat pour les demandes d'approvisionnement
   quantity: number;
 }
 
@@ -37,6 +80,19 @@ const SupplyRequests: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   
+  // Fonction pour formater la date correctement
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Date invalide';
+      }
+      return date.toLocaleDateString('fr-FR');
+    } catch (error) {
+      return 'Date invalide';
+    }
+  };
+  
   // État du formulaire
   const [formData, setFormData] = useState({
     date: new Date().toISOString().slice(0, 10),
@@ -55,10 +111,22 @@ const SupplyRequests: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{id: number, open: boolean}>({id: 0, open: false});
   const [medications, setMedications] = useState<Medication[]>([]);
   const [showAddMedication, setShowAddMedication] = useState(false);
-  const [newMedication, setNewMedication] = useState({ name: '', unit: '', price: '' });
+  const [newMedication, setNewMedication] = useState({ 
+    name: '', 
+    unit: '', 
+    price: '',
+    purchasePrice: '' // Ajout du champ prix d'achat
+  });
   const [selectedMedications, setSelectedMedications] = useState<{ [key: number]: string }>({});
 
   useEffect(() => {
+    // Vérifier l'authentification
+    const token = localStorage.getItem('auth-token');
+    if (!token) {
+      setError('Vous devez être connecté pour accéder à cette page. Veuillez vous connecter.');
+      return;
+    }
+
     fetchRequests();
     fetchMedications();
     setError(null);
@@ -67,7 +135,7 @@ const SupplyRequests: React.FC = () => {
 
   const fetchRequests = async () => {
     try {
-      const response = await axios.get('/api/supply-requests');
+      const response = await api.get('/api/supply-requests');
       setRequests(response.data.requests || []);
     } catch (error) {
       console.error('Erreur lors de la récupération des demandes:', error);
@@ -76,7 +144,7 @@ const SupplyRequests: React.FC = () => {
 
   const fetchMedications = async () => {
     try {
-      const response = await axios.get('/api/medications');
+      const response = await api.get('/api/medications');
       console.log('=== DONNÉES MÉDICAMENTS API ===');
       console.log('Réponse complète:', response.data);
       console.log('Médicaments reçus:', response.data.medications);
@@ -145,11 +213,17 @@ const SupplyRequests: React.FC = () => {
           name: medication.name,
           quantity: medication.quantity,
           price: medication.price,
+          purchasePrice: medication.purchasePrice,
           unit: medication.unit
         });
         
-        if (medication.price) {
-          console.log('Mise à jour prix:', medication.price);
+        // Utiliser le prix d'achat au lieu du prix général pour les demandes d'approvisionnement
+        if (medication.purchasePrice) {
+          console.log('Mise à jour prix d\'achat:', medication.purchasePrice);
+          handleItemChange(index, 'unitPrice', medication.purchasePrice);
+        } else if (medication.price) {
+          // Fallback sur le prix général si le prix d'achat n'est pas défini
+          console.log('Prix d\'achat non défini, utilisation du prix général:', medication.price);
           handleItemChange(index, 'unitPrice', medication.price);
         }
       } else {
@@ -162,23 +236,25 @@ const SupplyRequests: React.FC = () => {
       console.log('Vidage de la désignation et quantité disponible pour index:', index);
       handleItemChange(index, 'designation', '');
       handleItemChange(index, 'quantityAvailable', 0);
+      handleItemChange(index, 'unitPrice', 0);
     }
   };
 
   const handleAddMedication = async () => {
     try {
-      const response = await axios.post('/api/medications', {
+      const response = await api.post('/api/medications', {
         name: newMedication.name,
         quantity: 0,
         minQuantity: 0,
         unit: newMedication.unit,
-        price: newMedication.price ? parseFloat(newMedication.price) : 0
+        price: newMedication.price ? parseFloat(newMedication.price) : 0,
+        purchasePrice: newMedication.price ? parseFloat(newMedication.price) : 0 // Utiliser le même prix pour l'achat
       });
       
       // Ajouter le nouveau médicament à la liste
       setMedications([...medications, response.data.medication]);
       setShowAddMedication(false);
-      setNewMedication({ name: '', unit: '', price: '' });
+      setNewMedication({ name: '', unit: '', price: '', purchasePrice: '' });
       
       // Trouver l'index de l'item actuel et mettre à jour la désignation
       const currentItemIndex = formData.items.findIndex(item => item.designation === '');
@@ -219,7 +295,7 @@ const SupplyRequests: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.delete(`/api/supply-requests/${id}`);
+      await api.delete(`/api/supply-requests/${id}`);
       setSuccess('Demande supprimée avec succès !');
       setRequests(requests.filter(r => r.id !== id));
     } catch (error: any) {
@@ -257,16 +333,30 @@ const SupplyRequests: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('=== DÉBUT SOUMISSION FORMULAIRE ===');
-    console.log('Event:', e);
-    console.log('FormData:', formData);
-    console.log('SelectedMedications:', selectedMedications);
-    console.log('Sélections non vides:', Object.entries(selectedMedications).filter(([key, value]) => value && value.trim() !== ''));
     setLoading(true);
     setError(null);
     setSuccess(null);
 
+    // Vérification manuelle de l'authentification avant soumission
+    const token = localStorage.getItem('auth-token');
+    console.log('🔐 Vérification manuelle du token dans handleSubmit:');
+    console.log('🔐 Token présent:', token ? 'OUI' : 'NON');
+    console.log('🔐 Longueur du token:', token?.length);
+    console.log('🔐 Début du token:', token?.substring(0, 20) + '...');
+
+    if (!token) {
+      setError('Token d\'authentification manquant. Veuillez vous reconnecter.');
+      setLoading(false);
+      return;
+    }
+
     try {
+      console.log('=== DÉBUT SOUMISSION FORMULAIRE ===');
+      console.log('Event:', e);
+      console.log('FormData:', formData);
+      console.log('SelectedMedications:', selectedMedications);
+      console.log('Sélections non vides:', Object.entries(selectedMedications).filter(([key, value]) => value && value.trim() !== ''));
+      
       // Vérifier les items avec la désignation sélectionnée
       const validItems = formData.items.filter((item, index) => {
         const designation = selectedMedications[index] || item.designation;
@@ -310,12 +400,12 @@ const SupplyRequests: React.FC = () => {
       
       if (editRequest) {
         console.log('Mode édition - PATCH');
-        const response = await axios.patch(`/api/supply-requests/${editRequest.id}`, requestData);
+        const response = await api.patch(`/api/supply-requests/${editRequest.id}`, requestData);
         console.log('Réponse PATCH:', response.data);
         setSuccess('Demande modifiée avec succès !');
       } else {
         console.log('Mode création - POST');
-        const response = await axios.post('/api/supply-requests', requestData);
+        const response = await api.post('/api/supply-requests', requestData);
         console.log('Réponse POST:', response.data);
         setSuccess('Demande d\'approvisionnement créée avec succès !');
       }
@@ -336,16 +426,24 @@ const SupplyRequests: React.FC = () => {
       fetchRequests();
     } catch (error: any) {
       console.error('Erreur lors de la soumission:', error);
-      setError(error.response?.data?.error || 'Erreur lors de la création ou modification de la demande');
+      
+      if (error.response?.status === 401) {
+        setError('Erreur d\'authentification. Veuillez vous reconnecter.');
+      } else if (error.response?.status === 400) {
+        setError(error.response.data.error || 'Données invalides. Veuillez vérifier les informations saisies.');
+      } else if (error.response?.status === 500) {
+        setError('Erreur serveur. Veuillez réessayer plus tard.');
+      } else {
+        setError(error.response?.data?.error || 'Erreur lors de la soumission de la demande.');
+      }
     } finally {
-      console.log('=== FIN SOUMISSION FORMULAIRE ===');
       setLoading(false);
     }
   };
 
   const handleApprove = async (requestId: number) => {
     try {
-      await axios.patch(`/api/supply-requests/${requestId}/approve`);
+      await api.patch(`/api/supply-requests/${requestId}/approve`);
       setSuccess('Demande approuvée avec succès !');
       fetchRequests();
     } catch (error: any) {
@@ -390,7 +488,7 @@ const SupplyRequests: React.FC = () => {
           <div class="clinic-name">POLYCLINIQUE DES APOTRES</div>
           <div class="divider"></div>
           <div class="title">AUTORISATION D'APPROVISIONNEMENT N° ${request.requestNumber}</div>
-          <div>Date: ${new Date(request.date).toLocaleDateString('fr-FR')}</div>
+          <div>Date: ${formatDate(request.date)}</div>
         </div>
 
         <table>
@@ -615,7 +713,7 @@ const SupplyRequests: React.FC = () => {
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h3 className="text-lg font-semibold">Demande N° {request.requestNumber}</h3>
-                <p className="text-gray-600">Date: {new Date(request.date).toLocaleDateString('fr-FR')}</p>
+                <p className="text-gray-600">Date: {formatDate(request.date)}</p>
                 <p className="text-gray-600">Statut: 
                   <span className={`ml-2 px-2 py-1 rounded text-xs ${
                     request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
@@ -770,7 +868,7 @@ const SupplyRequests: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setShowAddMedication(false);
-                  setNewMedication({ name: '', unit: '', price: '' });
+                  setNewMedication({ name: '', unit: '', price: '', purchasePrice: '' });
                 }}
                 className="btn-secondary"
               >

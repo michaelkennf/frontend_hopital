@@ -8,6 +8,8 @@ interface Medication {
   minQuantity: number;
   unit: string;
   price?: number;
+  purchasePrice?: number; // Prix d'achat
+  sellingPrice?: number;  // Prix de vente
   expirationDate?: string;
 }
 
@@ -43,7 +45,16 @@ const StockManagement: React.FC = () => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showAddMed, setShowAddMed] = useState(false);
-  const [addFields, setAddFields] = useState<any>({ name: '', quantity: '', minQuantity: '', unit: '', price: '', expirationDate: '' });
+  const [addFields, setAddFields] = useState<any>({ 
+    name: '', 
+    quantity: '', 
+    minQuantity: '', 
+    unit: '', 
+    price: '', 
+    purchasePrice: '', // Prix d'achat
+    sellingPrice: '',  // Prix de vente
+    expirationDate: '' 
+  });
   const [addError, setAddError] = useState<string | null>(null);
   const [addingMed, setAddingMed] = useState(false);
 
@@ -176,12 +187,12 @@ const StockManagement: React.FC = () => {
   // Ajout médicament
   const openAddMed = () => {
     setShowAddMed(true);
-    setAddFields({ name: '', quantity: '', minQuantity: '', unit: '', price: '', expirationDate: '' });
+    setAddFields({ name: '', quantity: '', minQuantity: '', unit: '', price: '', purchasePrice: '', sellingPrice: '', expirationDate: '' });
     setAddError(null);
   };
   const closeAddMed = () => {
     setShowAddMed(false);
-    setAddFields({ name: '', quantity: '', minQuantity: '', unit: '', price: '', expirationDate: '' });
+    setAddFields({ name: '', quantity: '', minQuantity: '', unit: '', price: '', purchasePrice: '', sellingPrice: '', expirationDate: '' });
     setAddError(null);
     setAddingMed(false);
   };
@@ -198,7 +209,9 @@ const StockManagement: React.FC = () => {
         ...addFields,
         quantity: parseInt(addFields.quantity, 10),
         minQuantity: parseInt(addFields.minQuantity, 10),
-        price: addFields.price ? parseFloat(addFields.price) : undefined
+        price: addFields.price ? parseFloat(addFields.price) : undefined,
+        purchasePrice: addFields.purchasePrice ? parseFloat(addFields.purchasePrice) : undefined,
+        sellingPrice: addFields.sellingPrice ? parseFloat(addFields.sellingPrice) : undefined
       });
       closeAddMed();
       fetchMedications();
@@ -246,8 +259,10 @@ const StockManagement: React.FC = () => {
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Quantité</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Unité</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Prix d'achat</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Prix de vente</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Alerte</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -256,6 +271,12 @@ const StockManagement: React.FC = () => {
                   <td className="px-4 py-2">{m.name}</td>
                   <td className="px-4 py-2">{m.quantity}</td>
                   <td className="px-4 py-2">{m.unit}</td>
+                  <td className="px-4 py-2">
+                    {m.purchasePrice ? `$${m.purchasePrice.toFixed(2)}` : '-'}
+                  </td>
+                  <td className="px-4 py-2">
+                    {m.sellingPrice ? `$${m.sellingPrice.toFixed(2)}` : '-'}
+                  </td>
                   <td className="px-4 py-2">
                     {m.quantity <= m.minQuantity ? (
                       <span className="text-red-600 font-bold">Stock faible</span>
@@ -520,98 +541,152 @@ const StockManagement: React.FC = () => {
       )}
       {/* Modale ajout médicament */}
       {showAddMed && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-lg relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl max-h-[90vh] relative overflow-hidden">
             <button
-              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
               onClick={closeAddMed}
             >
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            <h2 className="text-xl font-bold mb-4">Ajouter un médicament</h2>
-            <form onSubmit={handleAddMed} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Nom</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={addFields.name}
-                  onChange={handleAddChange}
-                  required
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Quantité</label>
-                <input
-                  type="number"
-                  name="quantity"
-                  value={addFields.quantity}
-                  onChange={handleAddChange}
-                  required
-                  min="0"
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Quantité minimale (alerte)</label>
-                <input
-                  type="number"
-                  name="minQuantity"
-                  value={addFields.minQuantity}
-                  onChange={handleAddChange}
-                  required
-                  min="0"
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Unité</label>
-                <select
-                  name="unit"
-                  value={addFields.unit}
-                  onChange={handleAddChange}
-                  required
-                  className="input-field"
-                >
-                  <option value="">Sélectionner une unité</option>
-                  {unitOptions.map((u) => (
-                    <option key={u} value={u}>{u}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Prix ($)</label>
-                <input
-                  type="number"
-                  name="price"
-                  value={addFields.price}
-                  onChange={handleAddChange}
-                  min="0"
-                  step="0.01"
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Date d'expiration</label>
-                <input
-                  type="date"
-                  name="expirationDate"
-                  value={addFields.expirationDate}
-                  onChange={handleAddChange}
-                  className="input-field"
-                />
-              </div>
-              {addError && <div className="bg-red-100 text-red-700 p-2 mb-2 rounded">{addError}</div>}
-              <div className="flex justify-end gap-2">
-                <button type="button" className="btn-secondary" onClick={closeAddMed}>Annuler</button>
-                <button type="submit" className="btn-primary" disabled={addingMed}>
-                  {addingMed ? 'Ajout...' : 'Enregistrer'}
-                </button>
-              </div>
-            </form>
+            <h2 className="text-xl font-bold mb-4 pr-8">Ajouter un médicament</h2>
+            
+            {/* Conteneur scrollable pour le formulaire */}
+            <div className="overflow-y-auto max-h-[calc(90vh-120px)] pr-2">
+              <form onSubmit={handleAddMed} className="space-y-4">
+                {/* Première ligne - Nom et Quantité */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={addFields.name}
+                      onChange={handleAddChange}
+                      required
+                      className="input-field w-full"
+                      placeholder="Nom du médicament"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Quantité *</label>
+                    <input
+                      type="number"
+                      name="quantity"
+                      value={addFields.quantity}
+                      onChange={handleAddChange}
+                      required
+                      min="0"
+                      className="input-field w-full"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                {/* Deuxième ligne - Quantité minimale et Unité */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Quantité minimale (alerte) *</label>
+                    <input
+                      type="number"
+                      name="minQuantity"
+                      value={addFields.minQuantity}
+                      onChange={handleAddChange}
+                      required
+                      min="0"
+                      className="input-field w-full"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Unité *</label>
+                    <select
+                      name="unit"
+                      value={addFields.unit}
+                      onChange={handleAddChange}
+                      required
+                      className="input-field w-full"
+                    >
+                      <option value="">Sélectionner une unité</option>
+                      {unitOptions.map((u) => (
+                        <option key={u} value={u}>{u}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Troisième ligne - Prix général et Prix d'achat */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Prix général ($)</label>
+                    <input
+                      type="number"
+                      name="price"
+                      value={addFields.price}
+                      onChange={handleAddChange}
+                      min="0"
+                      step="0.01"
+                      className="input-field w-full"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Prix d'achat ($)</label>
+                    <input
+                      type="number"
+                      name="purchasePrice"
+                      value={addFields.purchasePrice}
+                      onChange={handleAddChange}
+                      min="0"
+                      step="0.01"
+                      className="input-field w-full"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+
+                {/* Quatrième ligne - Prix de vente et Date d'expiration */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Prix de vente ($)</label>
+                    <input
+                      type="number"
+                      name="sellingPrice"
+                      value={addFields.sellingPrice}
+                      onChange={handleAddChange}
+                      min="0"
+                      step="0.01"
+                      className="input-field w-full"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date d'expiration</label>
+                    <input
+                      type="date"
+                      name="expirationDate"
+                      value={addFields.expirationDate}
+                      onChange={handleAddChange}
+                      className="input-field w-full"
+                    />
+                  </div>
+                </div>
+
+                {addError && <div className="bg-red-100 text-red-700 p-3 rounded-md text-sm">{addError}</div>}
+                
+                {/* Boutons d'action */}
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                  <button type="button" className="btn-secondary px-6 py-2" onClick={closeAddMed}>
+                    Annuler
+                  </button>
+                  <button type="submit" className="btn-primary px-6 py-2" disabled={addingMed}>
+                    {addingMed ? 'Ajout...' : 'Enregistrer'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

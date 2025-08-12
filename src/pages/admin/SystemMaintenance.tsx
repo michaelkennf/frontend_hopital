@@ -50,9 +50,13 @@ const SystemMaintenance: React.FC = () => {
     fetchSystemStatus();
   }, []);
 
+
+
   const fetchSystemStatus = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       const response = await axios.get('/api/maintenance/status');
       setSystemStatus(response.data);
     } catch (err: any) {
@@ -67,7 +71,7 @@ const SystemMaintenance: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      const response = await axios.post('/api/maintenance/optimize-database');
+      const response = await axios.post('/api/maintenance/optimize-database', {});
       setSuccess(response.data.message);
       fetchSystemStatus(); // Rafraîchir les données
     } catch (err: any) {

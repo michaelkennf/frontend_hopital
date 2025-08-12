@@ -30,7 +30,7 @@ const MedicationsListMaternite: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get('/api/patients?service=medicaments_maternite');
+      const res = await axios.get('/api/patients?service=maternite');
       setPatients(res.data.patients || []);
     } catch (e) {
       setPatients([]);
@@ -52,7 +52,9 @@ const MedicationsListMaternite: React.FC = () => {
       const res = await axios.get('/api/medications/sales');
       // On ne garde que les ventes des patientes maternité
       const hospRes = await axios.get('/api/hospitalizations');
-      const matHosp = hospRes.data.hospitalizations.filter((h: any) => h.roomType && h.roomType.toLowerCase().includes('matern'));
+      const matHosp = hospRes.data.hospitalizations.filter((h: any) => 
+        h.roomType && h.roomType.name && h.roomType.name.toLowerCase().includes('maternite')
+      );
       const matPatientIds = matHosp.map((h: any) => h.patientId);
       setSales((res.data.sales || []).filter((s: any) => matPatientIds.includes(s.patient.id)));
     } catch (e) {

@@ -24,6 +24,7 @@ const PatientsManagementMaternite: React.FC = () => {
     poids: '',
     adresse: '',
     telephone: '',
+    roomType: '',
   });
   const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -35,21 +36,19 @@ const PatientsManagementMaternite: React.FC = () => {
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [editSuccess, setEditSuccess] = useState<string | null>(null);
+  const [roomTypes, setRoomTypes] = useState<any[]>([]); // Nouveau state pour les types de chambres
 
   useEffect(() => {
     fetchPatients();
+    fetchRoomTypes(); // Charger les types de chambres
   }, []);
 
   const fetchPatients = async () => {
     setLoading(true);
     setError(null);
     try {
-      // On récupère toutes les hospitalisations maternité pour filtrer les patients
-      const hospRes = await axios.get('/api/hospitalizations');
-      const hospMaternite = hospRes.data.hospitalizations.filter((h: any) => h.roomType && h.roomType.toLowerCase().includes('maternité'));
-      const hospPatientIds = hospMaternite.map((h: any) => h.patientId);
-      const patRes = await axios.get('/api/patients');
-      setPatients((patRes.data.patients || []).filter((p: any) => hospPatientIds.includes(p.id)));
+      const res = await axios.get('/api/patients?service=maternite');
+      setPatients(res.data.patients || []);
     } catch (e: any) {
       setError(e.response?.data?.error || 'Erreur lors du chargement des patients maternité');
     } finally {
@@ -57,9 +56,18 @@ const PatientsManagementMaternite: React.FC = () => {
     }
   };
 
+  const fetchRoomTypes = async () => {
+    try {
+      const res = await axios.get('/api/room-types');
+      setRoomTypes(res.data.roomTypes || []);
+    } catch (error: any) {
+      console.error('Erreur lors du chargement des types de chambres:', error);
+    }
+  };
+
   const handleOpenForm = () => {
     setForm({
-      nom: '', postNom: '', sexe: '', dateNaissance: '', age: '', poids: '', adresse: '', telephone: ''
+      nom: '', postNom: '', sexe: '', dateNaissance: '', age: '', poids: '', adresse: '', telephone: '', roomType: ''
     });
     setShowForm(true);
     setError(null);
@@ -80,7 +88,9 @@ const PatientsManagementMaternite: React.FC = () => {
     setLoading(true);
     setError(null);
     setSuccess(null);
+    
     try {
+      // 1. Créer le patient
       const res = await axios.post('/api/patients', {
         firstName: form.nom,
         lastName: form.postNom,
@@ -92,18 +102,29 @@ const PatientsManagementMaternite: React.FC = () => {
         interfaceOrigin: 'maternite', // Identifier l'interface d'origine
       });
       const patientId = res.data.patient?.id || res.data.id;
-      // 2. Hospitaliser immédiatement en maternité
-      await axios.post('/api/hospitalizations', {
-        patientId,
-        roomType: 'Maternité',
-        days: 1, // Par défaut 1 jour, sera mis à jour à la sortie
-        price: 1, // Prix par défaut pour maternité
+      
+      // 2. Hospitaliser immédiatement avec le type de chambre sélectionné
+      const hospitalizationRes = await axios.post('/api/hospitalizations', {
+        patientId: patientId,
+        roomTypeId: parseInt(form.roomType),
+        entryDate: new Date().toISOString().split('T')[0], // Date d'aujourd'hui
       });
+      
       setSuccess('Patient maternité enregistré avec succès !');
       setShowForm(false);
       fetchPatients();
+      
+      // Déclencher l'événement pour mettre à jour la page hospitalisation
+      window.dispatchEvent(new CustomEvent('patientHospitalized', { 
+        detail: { 
+          patientId, 
+          roomTypeId: parseInt(form.roomType),
+          hospitalization: hospitalizationRes.data.hospitalization
+        } 
+      }));
     } catch (e: any) {
-      setError(e.response?.data?.error || 'Erreur lors de l\'enregistrement du patient');
+      console.error('Erreur détaillée:', e.response?.data || e.message);
+      setError(e.response?.data?.error || e.message || 'Erreur lors de l\'enregistrement du patient');
     } finally {
       setLoading(false);
     }
@@ -151,6 +172,7 @@ const PatientsManagementMaternite: React.FC = () => {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Poids (kg)</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Adresse</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Téléphone</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type de chambre</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                 </tr>
               </thead>
@@ -166,6 +188,7 @@ const PatientsManagementMaternite: React.FC = () => {
                     <td className="px-4 py-2">{p.weight}</td>
                     <td className="px-4 py-2">{p.address}</td>
                     <td className="px-4 py-2">{p.phone}</td>
+                    <td className="px-4 py-2">{p.hospitalization?.roomType?.name || 'N/A'}</td>
                     <td className="px-4 py-2">
                       <button className="btn-secondary btn-xs" onClick={() => {
                         setEditForm({ ...p, sexe: p.gender, dateNaissance: p.dateOfBirth, poids: p.weight, adresse: p.address, telephone: p.phone });
@@ -234,6 +257,20 @@ const PatientsManagementMaternite: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Numéro de téléphone</label>
                   <input type="tel" name="telephone" value={form.telephone} onChange={handleChange} required className="input-field" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Type de chambre</label>
+                  <select name="roomType" value={form.roomType} onChange={handleChange} required className="input-field">
+                    <option value="">Sélectionner un type de chambre</option>
+                    {roomTypes.map(rt => (
+                      <option key={rt.id} value={rt.id}>{rt.name}</option>
+                    ))}
+                  </select>
+                  {roomTypes.length === 0 && (
+                    <p className="text-sm text-red-600 mt-1">
+                      Aucun type de chambre disponible. Veuillez en créer via l'interface logisticien.
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="pt-4 flex flex-col sm:flex-row justify-end gap-2 sticky bottom-0 bg-white z-10 pb-2">
@@ -327,6 +364,20 @@ const PatientsManagementMaternite: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Numéro de téléphone</label>
                   <input type="tel" name="telephone" value={editForm.telephone} onChange={(e) => setEditForm({...editForm, telephone: e.target.value})} required className="input-field" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Type de chambre</label>
+                  <select name="roomType" value={editForm.roomType} onChange={(e) => setEditForm({...editForm, roomType: e.target.value})} required className="input-field">
+                    <option value="">Sélectionner un type de chambre</option>
+                    {roomTypes.map(rt => (
+                      <option key={rt.id} value={rt.id}>{rt.name}</option>
+                    ))}
+                  </select>
+                  {roomTypes.length === 0 && (
+                    <p className="text-sm text-red-600 mt-1">
+                      Aucun type de chambre disponible. Veuillez en créer via l'interface logisticien.
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="pt-4 flex flex-col sm:flex-row justify-end gap-2 sticky bottom-0 bg-white z-10 pb-2">

@@ -51,7 +51,7 @@ const ExamsListHospitalisation: React.FC = () => {
       const res = await axios.get('/api/exams/realized');
       // On ne garde que les examens des patients hospitalisation
       const hospRes = await axios.get('/api/hospitalizations');
-      const hospHosp = hospRes.data.hospitalizations.filter((h: any) => h.roomType && h.roomType.toLowerCase().includes('hospitalisation'));
+      const hospHosp = hospRes.data.hospitalizations.filter((h: any) => h.roomType && h.roomType.name && h.roomType.name.toLowerCase().includes('hospitalisation'));
       const hospPatientIds = hospHosp.map((h: any) => h.patientId);
       setExams((res.data.exams || []).filter((e: any) => hospPatientIds.includes(e.patient.id)));
     } catch (e) {

@@ -53,7 +53,7 @@ interface Hospitalization {
   status: 'active' | 'discharged';
 }
 
-const HospitalisationsMaternite: React.FC = () => {
+const HospitalisationsHospitalisation: React.FC = () => {
   const [hospitalizations, setHospitalizations] = useState<Hospitalization[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,11 +94,11 @@ const HospitalisationsMaternite: React.FC = () => {
   const fetchHospitalizations = async () => {
     try {
       const res = await authenticatedAxios.get('/api/hospitalizations');
-      // Filtrer les hospitalisations avec des patients MAT-
-      const materniteHospitalizations = res.data.hospitalizations.filter((h: any) => 
-        h.patient && h.patient.folderNumber && h.patient.folderNumber.startsWith('MAT-')
+      // Filtrer les hospitalisations avec des patients HOSP-
+      const hospitalisationHospitalizations = res.data.hospitalizations.filter((h: any) => 
+        h.patient && h.patient.folderNumber && h.patient.folderNumber.startsWith('HOSP-')
       );
-      setHospitalizations(materniteHospitalizations);
+      setHospitalizations(hospitalisationHospitalizations);
     } catch (error: any) {
       setError('Erreur lors du chargement des hospitalisations');
       console.error('Erreur fetch hospitalisations:', error);
@@ -109,7 +109,7 @@ const HospitalisationsMaternite: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get('/api/patients?service=maternite');
+      const res = await authenticatedAxios.get('/api/patients?service=hospitalisation');
       setPatients(res.data.patients || []);
     } catch (error: any) {
       console.error('Erreur fetch patients:', error);
@@ -130,7 +130,7 @@ const HospitalisationsMaternite: React.FC = () => {
     setRoomForm({
       patientId: hosp.patient.id.toString(),
       roomTypeId: hosp.roomType.id.toString(),
-      days: hosp.days?.toString() || '1'
+      days: hosp.days?.toString() || ''
     });
     setShowRoomModal(true);
     setModalError(null);
@@ -142,10 +142,10 @@ const HospitalisationsMaternite: React.FC = () => {
 
     try {
       await authenticatedAxios.patch(`/api/hospitalizations/${selectedHospitalization.id}`, {
-        roomTypeId: parseInt(roomForm.roomTypeId),
-        days: parseInt(roomForm.days)
+        roomTypeId: parseInt(roomForm.roomTypeId, 10),
+        days: parseInt(roomForm.days, 10)
       });
-      setSuccess('Hospitalisation mise à jour avec succès');
+      setSuccess('Hospitalisation mise à jour avec succès !');
       setShowRoomModal(false);
       fetchHospitalizations();
     } catch (error: any) {
@@ -155,24 +155,23 @@ const HospitalisationsMaternite: React.FC = () => {
 
   const handleOpenExitModal = (hosp: Hospitalization) => {
     setSelectedHospitalization(hosp);
-    setExitDays(hosp.days?.toString() || '1');
+    setExitDays('');
     setShowExitModal(true);
     setModalError(null);
   };
 
   const handleExitSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedHospitalization) return;
+    if (!selectedHospitalization || !exitDays) return;
 
     try {
-      const roomType = roomTypes.find(rt => rt.id === selectedHospitalization.roomType.id);
-      const totalPrice = roomType ? roomType.price * parseInt(exitDays) : 0;
+      const totalPrice = parseInt(exitDays, 10) * (selectedHospitalization.roomType?.price || 0);
 
       await authenticatedAxios.patch(`/api/hospitalizations/${selectedHospitalization.id}/exit`, {
-        days: parseInt(exitDays),
+        days: parseInt(exitDays, 10),
         price: totalPrice
       });
-      setSuccess('Sortie d\'hospitalisation enregistrée avec succès');
+      setSuccess('Sortie d\'hospitalisation enregistrée avec succès !');
       setShowExitModal(false);
       fetchHospitalizations();
     } catch (error: any) {
@@ -181,26 +180,33 @@ const HospitalisationsMaternite: React.FC = () => {
   };
 
   const calculateAge = (dateOfBirth: string) => {
-    const birth = new Date(dateOfBirth);
+    if (!dateOfBirth) return 0;
     const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
       age--;
     }
     return age;
   };
 
+  const filteredHospitalizations = hospitalizations.filter(h => 
+    h.status === 'active' || !h.exitDate
+  );
+
+  // Calculer le prix total pour l'affichage
   const calculateTotalPrice = (days: string, roomType: any) => {
-    return roomType ? roomType.price * parseInt(days) : 0;
+    if (!days || !roomType) return 0;
+    return parseInt(days, 10) * (roomType.price || 0);
   };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Hospitalisations Maternité</h1>
-          <p className="text-gray-600">Gestion des hospitalisations maternité</p>
+          <h1 className="text-2xl font-bold">Hospitalisations</h1>
+          <p className="text-gray-600">Gestion des hospitalisations</p>
         </div>
       </div>
 
@@ -234,7 +240,7 @@ const HospitalisationsMaternite: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {hospitalizations.map((hosp) => (
+                {filteredHospitalizations.map((hosp) => (
                   <tr key={hosp.id}>
                     <td className="px-4 py-2">
                       {hosp.patient?.firstName || ''} {hosp.patient?.lastName || ''}
@@ -268,10 +274,10 @@ const HospitalisationsMaternite: React.FC = () => {
                     </td>
                   </tr>
                 ))}
-                {hospitalizations.length === 0 && (
+                {filteredHospitalizations.length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                      Aucune hospitalisation maternité active
+                      Aucune hospitalisation active
                     </td>
                   </tr>
                 )}
@@ -397,4 +403,4 @@ const HospitalisationsMaternite: React.FC = () => {
   );
 };
 
-export default HospitalisationsMaternite; 
+export default HospitalisationsHospitalisation;

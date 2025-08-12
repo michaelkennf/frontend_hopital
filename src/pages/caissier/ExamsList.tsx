@@ -76,8 +76,23 @@ const ExamsList: React.FC = () => {
   const fetchExams = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/exams/scheduled');
-      setExams(res.data.exams || []);
+      // Récupérer les examens programmés ET récemment réalisés
+      const [scheduledRes, realizedRes] = await Promise.all([
+        axios.get('/api/exams/scheduled'),
+        axios.get('/api/exams/realized')
+      ]);
+      
+      const scheduledExams = scheduledRes.data.exams || [];
+      
+      // Filtrer les examens réalisés récemment (dans les 10 dernières minutes)
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+      const recentlyRealizedExams = (realizedRes.data.exams || [])
+        .filter((exam: any) => new Date(exam.updatedAt || exam.date) > tenMinutesAgo);
+      
+      // Combiner les examens programmés et récemment réalisés
+      const allExams = [...scheduledExams, ...recentlyRealizedExams];
+      
+      setExams(allExams);
     } catch (e) {
       setExams([]);
     } finally {

@@ -48,7 +48,7 @@ const FinancialDashboard: React.FC = () => {
       const getMonth = (date: string) => new Date(date).getMonth();
       
       // Entrées par type
-      const types = ['consultation', 'exam', 'medication', 'hospitalization'];
+      const types = ['consultation', 'exam', 'medication', 'hospitalization', 'act'];
       const incomeByType: Record<string, number[]> = {};
       types.forEach(type => { incomeByType[type] = Array(12).fill(0); });
       
@@ -121,6 +121,11 @@ const FinancialDashboard: React.FC = () => {
             data: incomeByType['hospitalization'],
             backgroundColor: '#a855f7',
           },
+          {
+            label: 'Actes',
+            data: incomeByType['act'],
+            backgroundColor: '#ef4444',
+          },
         ]
       });
       setExpenseData({
@@ -173,6 +178,45 @@ const FinancialDashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Fonction pour formater le montant selon le type
+  const formatAmount = (amount: number, type: string) => {
+    if (type === 'consultation') {
+      return `${amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} FC`;
+    } else {
+      return `${amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} $`;
+    }
+  };
+
+  // Fonction pour calculer le total séparé par devise
+  const calculateTotalByCurrency = () => {
+    let consultationAmountFC = 0;
+    let otherAmountUSD = 0;
+
+    incomeDetails.forEach(row => {
+      if (row.type === 'consultation') {
+        consultationAmountFC += row.amount;
+      } else {
+        otherAmountUSD += row.amount;
+      }
+    });
+
+    return { consultationAmountFC, otherAmountUSD };
+  };
+
+  const formatTotalRevenue = () => {
+    const { consultationAmountFC, otherAmountUSD } = calculateTotalByCurrency();
+    
+    if (consultationAmountFC > 0 && otherAmountUSD > 0) {
+      return `${consultationAmountFC.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} FC + ${otherAmountUSD.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} $`;
+    } else if (consultationAmountFC > 0) {
+      return `${consultationAmountFC.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} FC`;
+    } else if (otherAmountUSD > 0) {
+      return `${otherAmountUSD.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} $`;
+    } else {
+      return '0 $';
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -219,7 +263,7 @@ const FinancialDashboard: React.FC = () => {
                     <th className="p-2">Type</th>
                     <th className="p-2">Description</th>
                     <th className="p-2">Patient</th>
-                    <th className="p-2">Montant ($)</th>
+                    <th className="p-2">Montant</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -229,12 +273,12 @@ const FinancialDashboard: React.FC = () => {
                       <td className="p-2 capitalize">{row.type}</td>
                       <td className="p-2">{row.description}</td>
                       <td className="p-2">{row.patient}</td>
-                      <td className="p-2">{row.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                      <td className="p-2">{formatAmount(row.amount, row.type)}</td>
                     </tr>
                   ))}
                   <tr className="font-bold bg-gray-50">
                     <td colSpan={4} className="p-2 text-right">Total</td>
-                    <td className="p-2">{incomeDetails.reduce((sum, r) => sum + r.amount, 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                    <td className="p-2">{formatTotalRevenue()}</td>
                   </tr>
                 </tbody>
               </table>
