@@ -231,58 +231,58 @@ const RequestsValidation: React.FC = () => {
               {supplyRequests.map((r) => (
                 <React.Fragment key={r.id}>
                   <tr className="border-b">
-                    <td className="border px-2 py-2">{r.requestNumber}</td>
+                  <td className="border px-2 py-2">{r.requestNumber}</td>
                     <td className="border px-2 py-2">{formatDate(r.date)}</td>
-                    <td className="border px-2 py-2">{r.requestedBy}</td>
-                    <td className="border px-2 py-2">{r.totalAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
-                    <td className="border px-2 py-2">
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        r.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        r.status === 'approved' ? 'bg-green-100 text-green-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {r.status === 'pending' ? 'En attente' : r.status === 'approved' ? 'Approuvée' : 'Rejetée'}
-                      </span>
-                    </td>
-                    <td className="border px-2 py-2">
-                      <textarea
-                        className="input-field"
-                        placeholder="Commentaire..."
-                        value={comment[`supply-${r.id}`] || r.pdgComment || ''}
-                        onChange={(e) => handleCommentChange(`supply-${r.id}`, e.target.value)}
-                        disabled={r.status !== 'pending'}
-                      />
-                    </td>
-                    <td className="border px-2 py-2 flex flex-col gap-2">
+                  <td className="border px-2 py-2">{r.requestedBy}</td>
+                  <td className="border px-2 py-2">{r.totalAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                  <td className="border px-2 py-2">
+                    <span className={`px-2 py-1 rounded text-xs ${
+                      r.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      r.status === 'approved' ? 'bg-green-100 text-green-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {r.status === 'pending' ? 'En attente' : r.status === 'approved' ? 'Approuvée' : 'Rejetée'}
+                    </span>
+                  </td>
+                  <td className="border px-2 py-2">
+                    <textarea
+                      className="input-field"
+                      placeholder="Commentaire..."
+                      value={comment[`supply-${r.id}`] || r.pdgComment || ''}
+                      onChange={(e) => handleCommentChange(`supply-${r.id}`, e.target.value)}
+                      disabled={r.status !== 'pending'}
+                    />
+                  </td>
+                  <td className="border px-2 py-2 flex flex-col gap-2">
                       <button
                         className="btn-secondary text-xs"
                         onClick={() => toggleSupplyRequestDetails(r.id)}
                       >
                         {expandedSupplyRequest === r.id ? 'Masquer détails' : 'Voir détails'}
                       </button>
-                      {r.status === 'pending' && (
-                        <>
-                          <button
-                            className="btn-primary"
-                            onClick={() => handleApproveSupply(r.id)}
-                            disabled={loading}
-                          >
-                            Approuver
-                          </button>
-                          <button
-                            className="btn-danger"
-                            onClick={() => handleRejectSupply(r.id)}
-                            disabled={loading}
-                          >
-                            Rejeter
-                          </button>
-                        </>
-                      )}
-                      {r.status !== 'pending' && (
-                        <span className="text-xs text-gray-500">{r.status === 'approved' ? `Validée le ${r.approvalDate ? new Date(r.approvalDate).toLocaleDateString('fr-FR') : ''}` : `Rejetée`}</span>
-                      )}
-                    </td>
-                  </tr>
+                    {r.status === 'pending' && (
+                      <>
+                        <button
+                          className="btn-primary"
+                          onClick={() => handleApproveSupply(r.id)}
+                          disabled={loading}
+                        >
+                          Approuver
+                        </button>
+                        <button
+                          className="btn-danger"
+                          onClick={() => handleRejectSupply(r.id)}
+                          disabled={loading}
+                        >
+                          Rejeter
+                        </button>
+                      </>
+                    )}
+                    {r.status !== 'pending' && (
+                      <span className="text-xs text-gray-500">{r.status === 'approved' ? `Validée le ${r.approvalDate ? new Date(r.approvalDate).toLocaleDateString('fr-FR') : ''}` : `Rejetée`}</span>
+                    )}
+                  </td>
+                </tr>
                   
                   {/* Vue détaillée des items de la demande */}
                   {expandedSupplyRequest === r.id && (
