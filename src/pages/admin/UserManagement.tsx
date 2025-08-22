@@ -4,15 +4,10 @@ import axios from 'axios';
 interface User {
   id: number;
   email: string;
-  role: {
-    name: string;
-    description?: string;
-  };
-  employee?: {
-    firstName: string;
-    lastName: string;
-    isActive: boolean;
-  };
+  role: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
   createdAt: string;
 }
 
@@ -109,7 +104,7 @@ const UserManagement: React.FC = () => {
   };
 
   const handleDeleteUser = async (user: User) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur ${user.employee ? `${user.employee.firstName} ${user.employee.lastName}` : user.email} ?\n\nCette action est irréversible.`)) {
+          if (!window.confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur ${user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email} ?\n\nCette action est irréversible.`)) {
       return;
     }
 
@@ -181,36 +176,51 @@ const UserManagement: React.FC = () => {
         )}
 
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
+          <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+            <h3 className="text-sm font-medium text-gray-700">Liste des utilisateurs ({users.length})</h3>
+            <button 
+              onClick={fetchUsers} 
+              className="text-sm text-primary-600 hover:text-primary-800 flex items-center"
+            >
+              <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Actualiser
+            </button>
+          </div>
           <ul className="divide-y divide-gray-200">
             {users.map((user) => (
-              <li key={user.id}>
+              <li key={user.id} className="hover:bg-gray-50 transition-colors">
                 <div className="px-4 py-4 flex items-center justify-between sm:px-6">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10">
                       <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
                         <span className="text-sm font-medium text-primary-800">
-                          {user.employee?.firstName?.charAt(0) || user.email.charAt(0).toUpperCase()}
+                          {user.firstName?.charAt(0) || user.email.charAt(0).toUpperCase()}
                         </span>
                       </div>
                     </div>
                     <div className="ml-4">
                       <div className="flex items-center">
                         <p className="text-sm font-medium text-gray-900">
-                          {user.employee ? `${user.employee.firstName} ${user.employee.lastName}` : user.email}
+                          {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
                         </p>
-                        <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          user.employee?.isActive !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {user.employee?.isActive !== false ? 'Actif' : 'Inactif'}
+                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Actif
                         </span>
                       </div>
                       <p className="text-sm text-gray-500">{user.email}</p>
-                      <p className="text-sm text-gray-500">Rôle: {typeof user.role === 'string' ? user.role : user.role?.name}</p>
+                      <p className="text-sm text-gray-500">
+                        <span className="font-medium">Rôle:</span> {user.role}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        Créé le {new Date(user.createdAt).toLocaleDateString('fr-FR')}
+                      </p>
                     </div>
                   </div>
                   <div className="flex space-x-2">
                     <button 
-                      className="text-primary-600 hover:text-primary-900 text-sm font-medium" 
+                      className="text-primary-600 hover:text-primary-900 text-sm font-medium px-3 py-1 rounded hover:bg-primary-50" 
                       onClick={() => {
                         setSelectedUser(user);
                         setShowResetModal(true);
@@ -221,7 +231,7 @@ const UserManagement: React.FC = () => {
                       Modifier
                     </button>
                     <button 
-                      className="text-red-600 hover:text-red-900 text-sm font-medium" 
+                      className="text-red-600 hover:text-red-900 text-sm font-medium px-3 py-1 rounded hover:bg-red-50" 
                       onClick={() => handleDeleteUser(user)}
                     >
                       Supprimer
@@ -231,6 +241,15 @@ const UserManagement: React.FC = () => {
               </li>
             ))}
           </ul>
+          {users.length === 0 && (
+            <div className="px-4 py-8 text-center text-gray-500">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+              </svg>
+              <p className="mt-2 text-sm">Aucun utilisateur trouvé</p>
+              <p className="text-xs">Commencez par ajouter un utilisateur</p>
+            </div>
+          )}
         </div>
       </div>
       {/* Modale d'ajout d'utilisateur */}
@@ -250,18 +269,22 @@ const UserManagement: React.FC = () => {
                 </svg>
               </button>
             </div>
-            <form onSubmit={handleAddUser} className="w-full">
-              <div className="mb-4">
-                <label className="block text-gray-700 mb-1" htmlFor="email">Email</label>
-                <input type="email" id="email" name="email" required placeholder="Email" className="input-field" value={addForm.email} onChange={handleAddChange} />
+            <form onSubmit={handleAddUser} className="w-full space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2" htmlFor="email">Email *</label>
+                  <input type="email" id="email" name="email" required placeholder="exemple@hopital.com" className="input-field h-12 text-base" value={addForm.email} onChange={handleAddChange} />
+                </div>
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2" htmlFor="password">Mot de passe *</label>
+                  <input type="password" id="password" name="password" required placeholder="Mot de passe sécurisé" className="input-field h-12 text-base" value={addForm.password} onChange={handleAddChange} />
+                </div>
               </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 mb-1" htmlFor="password">Mot de passe</label>
-                <input type="password" id="password" name="password" required placeholder="Mot de passe" className="input-field" value={addForm.password} onChange={handleAddChange} />
-              </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 mb-1" htmlFor="role">Rôle</label>
-                <select id="role" name="role" required className="input-field" value={addForm.role} onChange={handleAddChange}>
+              
+              <div>
+                <label className="block text-gray-700 font-medium mb-2" htmlFor="role">Rôle *</label>
+                <select id="role" name="role" required className="input-field h-12 text-base" value={addForm.role} onChange={handleAddChange}>
+                  <option value="">Sélectionner un rôle</option>
                   <option value="ADMIN">Admin</option>
                   <option value="PDG">PDG</option>
                   <option value="RH">RH</option>
@@ -273,22 +296,39 @@ const UserManagement: React.FC = () => {
                   <option value="AGENT_MATERNITE">Agent Maternité</option>
                 </select>
               </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 mb-1" htmlFor="firstName">Prénom</label>
-                <input type="text" id="firstName" name="firstName" required placeholder="Prénom" className="input-field" value={addForm.firstName} onChange={handleAddChange} />
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2" htmlFor="firstName">Prénom *</label>
+                  <input type="text" id="firstName" name="firstName" required placeholder="Prénom de l'utilisateur" className="input-field h-12 text-base" value={addForm.firstName} onChange={handleAddChange} />
+                </div>
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2" htmlFor="lastName">Nom *</label>
+                  <input type="text" id="lastName" name="lastName" required placeholder="Nom de l'utilisateur" className="input-field h-12 text-base" value={addForm.lastName} onChange={handleAddChange} />
+                </div>
               </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 mb-1" htmlFor="lastName">Nom</label>
-                <input type="text" id="lastName" name="lastName" required placeholder="Nom" className="input-field" value={addForm.lastName} onChange={handleAddChange} />
+              
+              <div>
+                <label className="block text-gray-700 font-medium mb-2" htmlFor="phone">Téléphone *</label>
+                <input type="text" id="phone" name="phone" required placeholder="+243 XXX XXX XXX" className="input-field h-12 text-base" value={addForm.phone} onChange={handleAddChange} />
               </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 mb-1" htmlFor="phone">Téléphone</label>
-                <input type="text" id="phone" name="phone" required placeholder="Téléphone" className="input-field" value={addForm.phone} onChange={handleAddChange} />
-              </div>
-              {addError && <div className="text-red-600 text-sm mb-2">{addError}</div>}
-              <div className="flex flex-col sm:flex-row justify-end gap-2 mt-2">
-                <button type="button" className="w-full sm:w-1/2 btn" onClick={() => setShowAddModal(false)} disabled={addLoading}>Annuler</button>
-                <button type="submit" className="w-full sm:w-1/2 btn-primary py-2" disabled={addLoading}>{addLoading ? 'Création...' : 'Créer'}</button>
+              {addError && <div className="text-red-600 text-sm mb-4">{addError}</div>}
+              <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+                <button 
+                  type="button" 
+                  className="w-full sm:w-auto px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" 
+                  onClick={() => setShowAddModal(false)} 
+                  disabled={addLoading}
+                >
+                  Annuler
+                </button>
+                <button 
+                  type="submit" 
+                  className="w-full sm:w-auto px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" 
+                  disabled={addLoading}
+                >
+                  {addLoading ? 'Création...' : 'Créer l\'utilisateur'}
+                </button>
               </div>
             </form>
           </div>
@@ -320,30 +360,30 @@ const UserManagement: React.FC = () => {
             
             <div className="mb-4">
               <p className="text-sm text-gray-600">
-                Réinitialiser le mot de passe pour : <strong>{selectedUser.employee ? `${selectedUser.employee.firstName} ${selectedUser.employee.lastName}` : selectedUser.email}</strong>
+                Réinitialiser le mot de passe pour : <strong>{selectedUser.firstName && selectedUser.lastName ? `${selectedUser.firstName} ${selectedUser.lastName}` : selectedUser.email}</strong>
               </p>
             </div>
 
-            <form onSubmit={handleResetPassword} className="w-full">
-              <div className="mb-4">
-                <label className="block text-gray-700 mb-1" htmlFor="newPassword">Nouveau mot de passe</label>
+            <form onSubmit={handleResetPassword} className="w-full space-y-6">
+              <div>
+                <label className="block text-gray-700 font-medium mb-2" htmlFor="newPassword">Nouveau mot de passe *</label>
                 <input 
                   type="password" 
                   id="newPassword" 
                   required 
-                  placeholder="Nouveau mot de passe" 
-                  className="input-field" 
+                  placeholder="Entrez le nouveau mot de passe" 
+                  className="input-field h-12 text-base" 
                   value={resetPassword} 
                   onChange={(e) => setResetPassword(e.target.value)} 
                 />
               </div>
               
-              {resetError && <div className="text-red-600 text-sm mb-2">{resetError}</div>}
+              {resetError && <div className="text-red-600 text-sm mb-4">{resetError}</div>}
               
-              <div className="flex flex-col sm:flex-row justify-end gap-2 mt-2">
+              <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
                 <button 
                   type="button" 
-                  className="w-full sm:w-1/2 btn" 
+                  className="w-full sm:w-auto px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" 
                   onClick={() => {
                     setShowResetModal(false);
                     setSelectedUser(null);
@@ -356,10 +396,10 @@ const UserManagement: React.FC = () => {
                 </button>
                 <button 
                   type="submit" 
-                  className="w-full sm:w-1/2 btn-primary py-2" 
+                  className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" 
                   disabled={resetLoading}
                 >
-                  {resetLoading ? 'Réinitialisation...' : 'Réinitialiser'}
+                  {resetLoading ? 'Réinitialisation...' : 'Réinitialiser le mot de passe'}
                 </button>
               </div>
             </form>
