@@ -42,13 +42,13 @@ const Login: React.FC = () => {
           case 'MEDECIN':
             redirectPath = '/medecin';
             break;
-          case 'AGENT_HOSPITALISATION':
+          case 'HOSPITALISATION':
             redirectPath = '/hospitalisation';
             break;
           case 'LABORANTIN':
             redirectPath = '/laborantin';
             break;
-          case 'AGENT_MATERNITE':
+          case 'MATERNITE':
             redirectPath = '/maternite';
             break;
           default:

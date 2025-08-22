@@ -151,15 +151,31 @@ export const useAuthStore = create<AuthStore>()(
         const token = localStorage.getItem('auth-token');
         
         if (!token) {
+          console.log('[AUTH STORE] Aucun token trouvé');
           set({ isLoading: false });
           return;
         }
 
+        // Éviter les appels répétés si déjà en cours
+        if (get().isLoading) {
+          console.log('[AUTH STORE] Vérification déjà en cours, ignoré');
+          return;
+        }
+
+        // Éviter les appels répétés si l'utilisateur est déjà chargé
+        if (get().user && get().token) {
+          console.log('[AUTH STORE] Utilisateur déjà chargé, ignoré');
+          return;
+        }
+
+        console.log('[AUTH STORE] Vérification du token...');
         set({ isLoading: true });
         
         try {
           const response = await axios.get('/api/auth/verify');
           const { user } = response.data;
+          
+          console.log('[AUTH STORE] Token valide, utilisateur:', { id: user.id, email: user.email, role: user.role });
           
           set({
             user,
@@ -167,7 +183,8 @@ export const useAuthStore = create<AuthStore>()(
             isLoading: false,
             error: null
           });
-        } catch (error) {
+        } catch (error: any) {
+          console.log('[AUTH STORE] Token invalide, nettoyage...', error.response?.status);
           // Token invalide, nettoyer l'état
           localStorage.removeItem('auth-token');
           set({

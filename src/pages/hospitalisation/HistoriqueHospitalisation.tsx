@@ -314,17 +314,17 @@ const HistoriqueHospitalisation: React.FC = () => {
               ) : (
                 hospitalisations.map((hosp) => (
                   <tr key={hosp.id}>
-                    <td className="border px-3 py-2">{hosp.patientName}</td>
-                    <td className="border px-3 py-2">{hosp.gender}</td>
-                    <td className="border px-3 py-2">{hosp.age}</td>
+                    <td className="border px-3 py-2">{hosp.patientName || '-'}</td>
+                    <td className="border px-3 py-2">{hosp.gender || '-'}</td>
+                    <td className="border px-3 py-2">{hosp.age || '-'}</td>
                     <td className="border px-3 py-2">{hosp.weight || '-'}</td>
                     <td className="border px-3 py-2">{hosp.address || '-'}</td>
                     <td className="border px-3 py-2">{hosp.profession || '-'}</td>
                     <td className="border px-3 py-2">{hosp.maritalStatus || '-'}</td>
-                    <td className="border px-3 py-2">{hosp.service}</td>
-                    <td className="border px-3 py-2">{new Date(hosp.entryDate).toLocaleDateString('fr-FR')}</td>
+                    <td className="border px-3 py-2">{hosp.service || '-'}</td>
+                    <td className="border px-3 py-2">{hosp.entryDate || '-'}</td>
                     <td className="border px-3 py-2">{hosp.entryTime || '-'}</td>
-                    <td className="border px-3 py-2">{hosp.exitDate ? new Date(hosp.exitDate).toLocaleDateString('fr-FR') : '-'}</td>
+                    <td className="border px-3 py-2">{hosp.exitDate || '-'}</td>
                     <td className="border px-3 py-2"></td>
                   </tr>
                 ))

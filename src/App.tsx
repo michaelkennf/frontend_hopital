@@ -30,9 +30,9 @@ function App() {
           <Route path="/caissier/*" element={<ProtectedRoute allowedRoles={["CAISSIER"]}><CaissierDashboard /></ProtectedRoute>} />
           <Route path="/logisticien/*" element={<ProtectedRoute allowedRoles={["LOGISTICIEN"]}><LogisticienDashboard /></ProtectedRoute>} />
           <Route path="/medecin/*" element={<ProtectedRoute allowedRoles={["MEDECIN"]}><MedecinDashboard /></ProtectedRoute>} />
-          <Route path="/hospitalisation/*" element={<ProtectedRoute allowedRoles={["AGENT_HOSPITALISATION"]}><HospitalisationDashboard /></ProtectedRoute>} />
+          <Route path="/hospitalisation/*" element={<ProtectedRoute allowedRoles={["HOSPITALISATION"]}><HospitalisationDashboard /></ProtectedRoute>} />
           <Route path="/laborantin/*" element={<ProtectedRoute allowedRoles={["LABORANTIN"]}><LaborantinDashboard /></ProtectedRoute>} />
-          <Route path="/maternite/*" element={<ProtectedRoute allowedRoles={["AGENT_MATERNITE"]}><MaterniteDashboard /></ProtectedRoute>} />
+          <Route path="/maternite/*" element={<ProtectedRoute allowedRoles={["MATERNITE"]}><MaterniteDashboard /></ProtectedRoute>} />
 
           {/* Redirection par défaut : si authentifié, dashboard selon rôle, sinon login */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

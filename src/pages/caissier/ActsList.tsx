@@ -32,6 +32,7 @@ const ActsList: React.FC = () => {
     patientId: '',
     actTypeId: '',
     date: new Date().toISOString().slice(0, 10),
+    amount: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -118,7 +119,23 @@ const ActsList: React.FC = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    if (name === 'actTypeId' && value) {
+      // Récupérer automatiquement le prix du type d'acte sélectionné
+      const selectedActType = actTypes.find(type => type.id === parseInt(value));
+      if (selectedActType) {
+        setForm({ 
+          ...form, 
+          [name]: value,
+          amount: selectedActType.price.toString()
+        });
+      } else {
+        setForm({ ...form, [name]: value });
+      }
+    } else {
+      setForm({ ...form, [name]: value });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -128,7 +145,7 @@ const ActsList: React.FC = () => {
     try {
       await axios.post('/api/acts', form);
       setSuccess('Acte enregistré avec succès');
-      setForm({ patientId: '', actTypeId: '', date: new Date().toISOString().slice(0, 10) });
+      setForm({ patientId: '', actTypeId: '', date: new Date().toISOString().slice(0, 10), amount: '' });
       setShowForm(false);
       fetchActs();
       fetchFacturedActs();
@@ -148,7 +165,7 @@ const ActsList: React.FC = () => {
         doc.addPage();
         y = 20;
       }
-      doc.text(`${index + 1}. ${act.patient.firstName} ${act.patient.lastName} - ${act.actType.name}`, 20, y);
+      doc.text(`${index + 1}. ${act.patient?.firstName || ''} ${act.patient?.lastName || ''} - ${act.actType?.name || 'Type non défini'}`, 20, y);
       y += 10;
     });
     doc.save('liste-actes.pdf');
@@ -167,14 +184,14 @@ const ActsList: React.FC = () => {
     
     return (
       (search === '' || 
-       act.patient.firstName?.toLowerCase().includes(searchLower) ||
-       act.patient.lastName?.toLowerCase().includes(searchLower) ||
-       act.actType.name.toLowerCase().includes(searchLower)) &&
+       act.patient?.firstName?.toLowerCase().includes(searchLower) ||
+       act.patient?.lastName?.toLowerCase().includes(searchLower) ||
+       act.actType?.name?.toLowerCase().includes(searchLower)) &&
       (patientSearch === '' ||
-       act.patient.firstName?.toLowerCase().includes(patientSearchLower) ||
-       act.patient.lastName?.toLowerCase().includes(patientSearchLower)) &&
+       act.patient?.firstName?.toLowerCase().includes(patientSearchLower) ||
+       act.patient?.lastName?.toLowerCase().includes(patientSearchLower)) &&
       (actTypeSearch === '' ||
-       act.actType.name.toLowerCase().includes(actTypeSearchLower))
+       act.actType?.name?.toLowerCase().includes(actTypeSearchLower))
     );
   });
 
@@ -277,6 +294,16 @@ const ActsList: React.FC = () => {
               required
               className="input-field"
             />
+            <input
+              type="number"
+              name="amount"
+              value={form.amount}
+              onChange={handleChange}
+              placeholder="Prix"
+              required
+              readOnly
+              className="input-field bg-gray-100"
+            />
             <div className="md:col-span-3 flex gap-2">
               <button type="submit" className="btn-primary" disabled={loading}>
                 {loading ? 'Enregistrement...' : 'Enregistrer'}
@@ -308,11 +335,11 @@ const ActsList: React.FC = () => {
             {filteredActs.map(act => (
               <tr key={act.id}>
                 <td className="px-4 py-2 font-mono text-sm">
-                  {act.patient.folderNumber} - {act.patient.lastName?.toUpperCase() || ''} {act.patient.firstName || ''}
+                  {act.patient?.folderNumber} - {act.patient?.lastName?.toUpperCase() || ''} {act.patient?.firstName || ''}
                 </td>
-                <td className="px-4 py-2">{act.actType.name}</td>
+                <td className="px-4 py-2">{act.actType?.name || 'Type non défini'}</td>
                 <td className="px-4 py-2">{new Date(act.date).toLocaleDateString('fr-FR')}</td>
-                <td className="px-4 py-2">${act.price}</td>
+                <td className="px-4 py-2">${act.price || 0}</td>
               </tr>
             ))}
           </tbody>

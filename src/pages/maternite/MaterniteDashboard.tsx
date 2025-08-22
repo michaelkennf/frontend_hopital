@@ -45,6 +45,7 @@ const MaterniteDashboard: React.FC = () => {
       <Layout
         title="Maternité"
         navigationItems={navigationItems}
+        settingsPath="/maternite/settings"
       >
         <Routes>
           <Route path="/" element={<MaterniteOverview />} />

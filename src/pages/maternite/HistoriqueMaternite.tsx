@@ -1,10 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-// Instance axios séparée pour les routes maternité sans authentification
-const maternityAxios = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
-});
+// Instance axios authentifiée pour les routes maternité
+const authenticatedAxios = {
+  get: (url: string) => {
+    const token = localStorage.getItem('auth-token');
+    return axios.get(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+  post: (url: string, data: any) => {
+    const token = localStorage.getItem('auth-token');
+    return axios.post(url, data, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  }
+};
 
 const initialFilters = {
   // Champs spécifiques à la maternité seulement
@@ -130,7 +145,7 @@ const HistoriqueMaternite: React.FC = () => {
       console.log('🔍 Récupération des historiques de maternité...');
       
       // Récupérer TOUS les historiques de la table maternity-history
-      const response = await maternityAxios.get('/api/maternity-history');
+      const response = await authenticatedAxios.get('/api/maternity-history');
       console.log('📥 Réponse API maternity-history:', response.data);
       
       const allHistories = response.data.histories || [];
@@ -287,7 +302,7 @@ const HistoriqueMaternite: React.FC = () => {
       // CONFIRMATION: Les données sont isolées et ne seront JAMAIS partagées
       console.log('🔒 ISOLATION CONFIRMÉE: Données stockées uniquement dans maternity-history, jamais partagées');
       
-      const response = await maternityAxios.post('/api/maternity-history', dataToSend);
+      const response = await authenticatedAxios.post('/api/maternity-history', dataToSend);
       setSuccess('Historique de maternité enregistré avec succès !');
       setFilters(initialFilters);
       fetchMaternites();
@@ -586,47 +601,24 @@ const HistoriqueMaternite: React.FC = () => {
                       <td className="border px-4 py-3 text-sm">{maternite.cpn || '-'}</td>
                       <td className="border px-4 py-3 text-sm">
                         {(() => {
-                          // Essayer d'abord les champs individuels
-                          const g = maternite.formuleObstetricaleG || '';
-                          const p = maternite.formuleObstetricaleP || '';
-                          const ev = maternite.formuleObstetricaleEV || '';
-                          const av = maternite.formuleObstetricaleAV || '';
-                          const mn = maternite.formuleObstetricaleMortNe || '';
-                          
-                          // Debug: Log des valeurs reçues
-                          console.log(`🔍 Maternité ${maternite.id} - Valeurs reçues:`, {
-                            g, p, ev, av, mn,
-                            gType: typeof g,
-                            pType: typeof p,
-                            evType: typeof ev,
-                            avType: typeof av,
-                            mnType: typeof mn,
-                            gTruthy: !!g,
-                            pTruthy: !!p,
-                            evTruthy: !!ev,
-                            avTruthy: !!av,
-                            mnTruthy: !!mn,
-                            formuleObstetricale: maternite.formuleObstetricale
-                          });
-                          
-                          // Construire la formule complète avec les vraies données saisies
+                          // Construire la formule obstétricale à partir des champs individuels
                           let formule = '';
-                          if (g !== '') formule += `${g}G `;
-                          if (p !== '') formule += `${p}P `;
-                          if (ev !== '') formule += `${ev}EV `;
-                          if (av !== '') formule += `${av}AV `;
-                          if (mn !== '') formule += `${mn}MN`;
-                          
-                          console.log(`🔍 Maternité ${maternite.id} - Formule construite: "${formule.trim()}"`);
-                          
-                          // Si la formule construite est vide, utiliser le champ direct
-                          if (!formule.trim()) {
-                            console.log(`🔍 Maternité ${maternite.id} - Utilisation du champ direct: "${maternite.formuleObstetricale}"`);
-                            return maternite.formuleObstetricale || '-';
+                          if (maternite.formuleObstetricaleG && maternite.formuleObstetricaleG !== '' && maternite.formuleObstetricaleG !== 'N/A') {
+                            formule += `${maternite.formuleObstetricaleG}G `;
                           }
-                          
-                          // Sinon, retourner la formule construite
-                          return formule.trim();
+                          if (maternite.formuleObstetricaleP && maternite.formuleObstetricaleP !== '' && maternite.formuleObstetricaleP !== 'N/A') {
+                            formule += `${maternite.formuleObstetricaleP}P `;
+                          }
+                          if (maternite.formuleObstetricaleEV && maternite.formuleObstetricaleEV !== '' && maternite.formuleObstetricaleEV !== 'N/A') {
+                            formule += `${maternite.formuleObstetricaleEV}EV `;
+                          }
+                          if (maternite.formuleObstetricaleAV && maternite.formuleObstetricaleAV !== '' && maternite.formuleObstetricaleAV !== 'N/A') {
+                            formule += `${maternite.formuleObstetricaleAV}AV `;
+                          }
+                          if (maternite.formuleObstetricaleMortNe && maternite.formuleObstetricaleMortNe !== '' && maternite.formuleObstetricaleMortNe !== 'N/A') {
+                            formule += `${maternite.formuleObstetricaleMortNe}MN`;
+                          }
+                          return formule.trim() || '-';
                         })()}
                       </td>
                       <td className="border px-4 py-3 text-sm">{maternite.ddr ? new Date(maternite.ddr).toLocaleDateString('fr-FR') : '-'}</td>

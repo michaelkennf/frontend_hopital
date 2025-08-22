@@ -156,22 +156,30 @@ const Invoices: React.FC = () => {
       win.document.write(`
         <style>
           @media print {
+            @page {
+              margin: 15mm !important;
+              size: A4 !important;
+            }
             body { 
               width: 100% !important; 
               margin: 0 !important; 
-              padding: 10px !important;
-              font-size: 16px !important; font-weight: bold !important;
+              padding: 3mm !important;
+              font-size: 11px !important;
               color: black !important;
               background: white !important;
+              font-family: Arial, sans-serif !important;
+              font-weight: bold !important;
             }
             .facture { 
-              width: 100% !important; 
-              max-width: 80mm !important;
+              width: 90% !important; 
+              max-width: none !important;
               margin: 0 auto !important;
+              padding: 0 !important;
+              font-weight: bold !important;
             }
             .facture-header { 
               text-align: center !important; 
-              font-size: 16px !important; 
+              font-size: 13px !important; 
               font-weight: bold !important; 
               margin-bottom: 8px !important;
               color: black !important;
@@ -179,26 +187,36 @@ const Invoices: React.FC = () => {
             .facture-table { 
               width: 100% !important; 
               border-collapse: collapse !important; 
-              font-size: 15px !important; font-weight: bold !important;
+              font-size: 10px !important;
               margin: 8px 0 !important;
+              table-layout: fixed !important;
+              font-weight: bold !important;
             }
             .facture-table th, .facture-table td { 
-              border-bottom: 1px solid black !important; 
-              padding: 4px 2px !important; 
+              border: 1px solid black !important; 
+              padding: 4px 3px !important; 
               text-align: left !important;
               color: black !important;
+              word-wrap: break-word !important;
+              overflow-wrap: break-word !important;
+              font-weight: bold !important;
+            }
+            .facture-table th {
+              background: #f0f0f0 !important;
+              font-weight: bold !important;
             }
             .footer { 
-              font-size: 12px !important; font-weight: bold !important; 
+              font-size: 9px !important;
               text-align: center !important; 
-              margin-top: 15px !important; 
+              margin-top: 12px !important; 
               color: black !important;
               border-top: 1px solid black !important;
-              padding-top: 8px !important;
+              padding-top: 6px !important;
+              font-weight: bold !important;
             }
             .entete-logo { 
-              height: 40px !important; 
-              margin-bottom: 5px !important;
+              height: 30px !important; 
+              margin-bottom: 4px !important;
               display: block !important;
               margin-left: auto !important;
               margin-right: auto !important;
@@ -206,49 +224,73 @@ const Invoices: React.FC = () => {
             .entete-title { 
               color: black !important; 
               font-weight: bold !important; 
-              font-size: 15px !important;
-              margin: 5px 0 !important;
+              font-size: 12px !important;
+              margin: 4px 0 !important;
             }
             .entete-sub { 
               color: black !important; 
               font-weight: bold !important; 
-              font-size: 15px !important; font-weight: bold !important;
-              margin: 3px 0 !important;
+              font-size: 10px !important;
+              margin: 2px 0 !important;
             }
             .patient-info {
-              margin: 8px 0 !important;
-              font-size: 15px !important; font-weight: bold !important;
+              margin: 6px 0 !important;
+              font-size: 10px !important;
               color: black !important;
+              font-weight: bold !important;
             }
             .total-section {
-              margin-top: 10px !important;
+              margin-top: 8px !important;
               text-align: right !important;
-              font-size: 16px !important; font-weight: bold !important;
+              font-size: 11px !important;
               font-weight: bold !important;
               color: black !important;
               border-top: 2px solid black !important;
-              padding-top: 5px !important;
+              padding-top: 4px !important;
+            }
+            .no-break {
+              page-break-inside: avoid !important;
+            }
+            * {
+              font-weight: bold !important;
+            }
+            p, span, div, td, th, h1, h2, h3, h4, h5, h6 {
+              font-weight: bold !important;
+            }
+            .facture * {
+              font-weight: bold !important;
+            }
+            .patient-info * {
+              font-weight: bold !important;
+            }
+            .total-section * {
+              font-weight: bold !important;
+            }
+            .footer * {
+              font-weight: bold !important;
             }
           }
           
           body { 
-            font-family: 'Courier New', monospace, Arial, sans-serif; 
-            font-size: 16px; font-weight: bold; 
+            font-family: Arial, sans-serif; 
+            font-size: 11px;
             width: 100%; 
             margin: 0; 
-            padding: 10px;
+            padding: 8px;
             color: black;
             background: white;
+            font-weight: bold;
           }
           .facture { 
-            width: 100%; 
-            max-width: 80mm; 
+            width: 90%; 
+            max-width: none; 
             margin: 0 auto; 
-            padding: 5px;
+            padding: 8px;
+            font-weight: bold;
           }
           .facture-header { 
             text-align: center; 
-            font-size: 16px; 
+            font-size: 13px; 
             font-weight: bold; 
             margin-bottom: 8px;
             color: black;
@@ -256,30 +298,36 @@ const Invoices: React.FC = () => {
           .facture-table { 
             width: 100%; 
             border-collapse: collapse; 
-            font-size: 15px; font-weight: bold;
+            font-size: 10px;
             margin: 8px 0;
+            table-layout: fixed;
+            font-weight: bold;
           }
           .facture-table th, .facture-table td { 
-            border-bottom: 1px solid black; 
-            padding: 4px 2px; 
+            border: 1px solid black; 
+            padding: 4px 3px; 
             text-align: left;
             color: black;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            font-weight: bold;
           }
           .facture-table th {
-            font-weight: bold;
             background: #f0f0f0;
+            font-weight: bold;
           }
           .footer { 
-            font-size: 12px; font-weight: bold; 
+            font-size: 9px;
             text-align: center; 
-            margin-top: 15px; 
+            margin-top: 12px; 
             color: black;
             border-top: 1px solid black;
-            padding-top: 8px;
+            padding-top: 6px;
+            font-weight: bold;
           }
           .entete-logo { 
-            height: 40px; 
-            margin-bottom: 5px;
+            height: 30px; 
+            margin-bottom: 4px;
             display: block;
             margin-left: auto;
             margin-right: auto;
@@ -287,28 +335,29 @@ const Invoices: React.FC = () => {
           .entete-title { 
             color: black; 
             font-weight: bold; 
-            font-size: 15px;
-            margin: 5px 0;
+            font-size: 12px;
+            margin: 4px 0;
           }
           .entete-sub { 
             color: black; 
             font-weight: bold; 
-            font-size: 15px; font-weight: bold;
-            margin: 3px 0;
+            font-size: 10px;
+            margin: 2px 0;
           }
           .patient-info {
-            margin: 8px 0;
-            font-size: 15px; font-weight: bold;
+            margin: 6px 0;
+            font-size: 10px;
             color: black;
+            font-weight: bold;
           }
           .total-section {
-            margin-top: 10px;
+            margin-top: 8px;
             text-align: right;
-            font-size: 16px; font-weight: bold;
+            font-size: 11px;
             font-weight: bold;
             color: black;
             border-top: 2px solid black;
-            padding-top: 5px;
+            padding-top: 4px;
           }
         </style>
       `);
@@ -318,35 +367,29 @@ const Invoices: React.FC = () => {
       win.document.write('<div style="text-align:center;margin-bottom:10px;">');
       win.document.write('<img src="/logo_polycliniques.jpg" class="entete-logo" alt="Logo" />');
       
-      
-      
-      
-      
-      
-      
-      win.document.write('<div class="entete-title">POLYCLINIQUE DES APOTRES</div>');
+      win.document.write('<div class="entete-title"><strong>POLYCLINIQUE DES APOTRES</strong></div>');
       win.document.write('</div>');
       
       // Informations de la facture
       win.document.write('<div class="facture">');
-      win.document.write('<div class="facture-header">FACTURE</div>');
+      win.document.write('<div class="facture-header"><strong>FACTURE</strong></div>');
       win.document.write(`<div class="patient-info"><strong>N°:</strong> ${invoice.invoiceNumber}</div>`);
       win.document.write(`<div class="patient-info"><strong>Patient:</strong> ${invoice.patient.folderNumber} - ${invoice.patient.lastName.toUpperCase()} ${invoice.patient.firstName}</div>`);
       win.document.write(`<div class="patient-info"><strong>Date:</strong> ${new Date(invoice.createdAt).toLocaleDateString('fr-FR')} ${new Date(invoice.createdAt).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}</div>`);
       
       // Tableau des items
       win.document.write('<table class="facture-table">');
-      win.document.write('<thead><tr><th>Désignation</th><th>Qté</th><th>PU</th><th>Total</th></tr></thead>');
+      win.document.write('<thead><tr><th><strong>Désignation</strong></th><th><strong>Qté</strong></th><th><strong>PU</strong></th><th><strong>Total</strong></th></tr></thead>');
       win.document.write('<tbody>');
       
       // Log chaque item avant de l'écrire
       invoice.items.forEach((item, index) => {
         console.log(`📝 Item ${index}:`, item);
         win.document.write(`<tr>
-          <td>${item.description || 'N/A'}</td>
-          <td>${item.quantity || 0}</td>
-          <td>${item.unitPrice || 0} ${item.type === 'consultation' ? 'FC' : '$'}</td>
-          <td>${item.totalPrice || 0} ${item.type === 'consultation' ? 'FC' : '$'}</td>
+          <td><strong>${item.description || 'N/A'}</strong></td>
+          <td><strong>${item.quantity || 0}</strong></td>
+          <td><strong>${item.unitPrice || 0} ${item.type === 'consultation' ? 'FC' : '$'}</strong></td>
+          <td><strong>${item.totalPrice || 0} ${item.type === 'consultation' ? 'FC' : '$'}</strong></td>
         </tr>`);
       });
       
@@ -371,7 +414,7 @@ const Invoices: React.FC = () => {
     
     // Marquer la facture comme imprimée côté backend
     try {
-      await axios.patch(`/api/invoices/${invoice.id}`, { printed: true });
+      await axios.patch(`/api/invoices/${invoice.id}/print`);
       // Rafraîchir la liste
       const token = localStorage.getItem('auth-token');
       let res;
@@ -385,7 +428,7 @@ const Invoices: React.FC = () => {
         setInvoices(data.invoices);
       }
     } catch (e) {
-      // ignore
+      console.error('Erreur lors du marquage comme imprimée:', e);
     } finally {
       setPrintingId(null);
     }

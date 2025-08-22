@@ -209,6 +209,7 @@ const HospitalisationDashboard: React.FC = () => {
       <Layout
         title="Hospitalisation"
         navigationItems={navigationItems}
+        settingsPath="/hospitalisation/settings"
       >
         <Routes>
           <Route path="/" element={<HospitalisationOverview />} />
