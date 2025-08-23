@@ -52,6 +52,7 @@ const PatientsManagementHospitalisation: React.FC = () => {
     adresse: '',
     telephone: '',
     roomType: '',
+    entryDate: new Date().toISOString().slice(0, 10), // Date d'entrée par défaut
   });
   const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -102,7 +103,8 @@ const PatientsManagementHospitalisation: React.FC = () => {
       poids: '', 
       adresse: '', 
       telephone: '',
-      roomType: ''
+      roomType: '',
+      entryDate: new Date().toISOString().slice(0, 10), // Date d'entrée par défaut
     });
     setShowForm(true);
     setError(null);
@@ -158,7 +160,7 @@ const PatientsManagementHospitalisation: React.FC = () => {
       const hospitalizationRes = await authenticatedAxios.post('/api/hospitalizations', {
         patientId: patientId,
         roomTypeId: parseInt(form.roomType),
-        entryDate: new Date().toISOString(),
+        entryDate: form.entryDate, // Utiliser la date d'entrée saisie par l'utilisateur
       });
 
       await fetchPatients();
@@ -174,6 +176,7 @@ const PatientsManagementHospitalisation: React.FC = () => {
         adresse: '',
         telephone: '',
         roomType: '',
+        entryDate: new Date().toISOString().slice(0, 10), // Date d'entrée par défaut
       });
       setSuccess('Patient hospitalisé avec succès !');
       
@@ -242,7 +245,74 @@ const PatientsManagementHospitalisation: React.FC = () => {
       />
       <p className="text-gray-600 mb-6">Ajoutez, modifiez ou consultez les patients hospitalisés.</p>
       {error && <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">{error}</div>}
-      {success && <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4 text-green-700">{success}</div>}
+      {success && (
+        <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+          {success}
+        </div>
+      )}
+      
+      {/* Composant de débogage pour les dates d'entrée */}
+      {patients.length > 0 && patients.some(p => !p.hospitalization?.startDate) && (
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4 text-blue-700">
+          <h3 className="font-semibold mb-2">⚠️ Données d'hospitalisation manquantes</h3>
+          <p className="text-sm">
+            Certains patients n'ont pas de données d'hospitalisation complètes. 
+            Cela peut causer l'affichage "N/A" dans la colonne Date d'entrée.
+          </p>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
+            <div className="mt-2 text-xs">
+              {patients.filter(p => !p.hospitalization?.startDate).map((p, index) => (
+                <div key={index} className="mb-1 p-2 bg-blue-100 rounded">
+                  Patient: {p.folderNumber} - {p.lastName} {p.firstName} - 
+                  Hospitalisation: {p.hospitalization ? `ID ${p.hospitalization.id}` : 'Aucune'} - 
+                  startDate: {p.hospitalization?.startDate || 'undefined'}
+                </div>
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
+      
+      {/* Composant de débogage pour les dates invalides */}
+      {patients.length > 0 && patients.some(p => {
+        if (!p.hospitalization?.startDate) return false;
+        try {
+          new Date(p.hospitalization.startDate);
+          return false;
+        } catch {
+          return true;
+        }
+      }) && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">
+          <h3 className="font-semibold mb-2">⚠️ Dates d'entrée invalides détectées</h3>
+          <p className="text-sm">
+            Certaines dates d'entrée ont un format invalide et causent "Invalid Date".
+          </p>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
+            <div className="mt-2 text-xs">
+              {patients.filter(p => {
+                if (!p.hospitalization?.startDate) return false;
+                try {
+                  new Date(p.hospitalization.startDate);
+                  return false;
+                } catch {
+                  return true;
+                }
+              }).map((p, index) => (
+                <div key={index} className="mb-1 p-2 bg-red-100 rounded">
+                  Patient: {p.folderNumber} - {p.lastName} {p.firstName} - 
+                  startDate brute: {p.hospitalization?.startDate} - 
+                  Type: {typeof p.hospitalization?.startDate}
+                </div>
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
+      
+      {/* Filtres */}
       <div className="card mb-6">
         {loading ? (
           <div className="flex items-center justify-center h-24">Chargement...</div>
@@ -262,6 +332,7 @@ const PatientsManagementHospitalisation: React.FC = () => {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Poids (kg)</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Adresse</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Téléphone</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date d'entrée</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                 </tr>
               </thead>
@@ -277,6 +348,12 @@ const PatientsManagementHospitalisation: React.FC = () => {
                     <td className="px-4 py-2">{p.weight}</td>
                     <td className="px-4 py-2">{p.address}</td>
                     <td className="px-4 py-2">{p.phone}</td>
+                    <td className="px-4 py-2">
+                      {p.hospitalization?.startDate ? 
+                        new Date(p.hospitalization.startDate).toLocaleDateString('fr-FR') : 
+                        'N/A'
+                      }
+                    </td>
                     <td className="px-4 py-2">
                       <button className="btn-secondary btn-xs" onClick={() => handleEdit(p)}>Modifier</button>
                     </td>
@@ -355,6 +432,17 @@ const PatientsManagementHospitalisation: React.FC = () => {
                       <option key={rt.id} value={rt.id}>{rt.name}</option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Date d'entrée</label>
+                  <input 
+                    type="date" 
+                    name="entryDate" 
+                    value={form.entryDate} 
+                    onChange={handleChange} 
+                    required 
+                    className="input-field" 
+                  />
                 </div>
               </div>
               <div className="pt-4 flex flex-col sm:flex-row justify-end gap-2 sticky bottom-0 bg-white z-10 pb-2">

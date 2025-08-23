@@ -1,34 +1,58 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import jsPDF from 'jspdf';
+
+interface Patient {
+  id: number;
+  folderNumber: string;
+  lastName?: string;
+  firstName?: string;
+}
+
+interface ActType {
+  id: number;
+  name: string;
+  price: number;
+}
+
+interface Act {
+  id: number;
+  patient: Patient;
+  actType: ActType;
+  date: string;
+  price: number;
+}
 
 const ActsListMaternite: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
-  const [patients, setPatients] = useState<any[]>([]);
-  const [actTypes, setActTypes] = useState<any[]>([]);
-  const [acts, setActs] = useState<any[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [actTypes, setActTypes] = useState<ActType[]>([]);
+  const [acts, setActs] = useState<Act[]>([]);
   const [form, setForm] = useState({
     patientId: '',
     actTypeId: '',
     date: new Date().toISOString().slice(0, 10),
+    amount: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
+  const [facturedActs, setFacturedActs] = useState<number[]>([]);
   const [search, setSearch] = useState('');
   const [patientSearch, setPatientSearch] = useState('');
   const [actTypeSearch, setActTypeSearch] = useState('');
-
-  const tableRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchPatients();
     fetchActTypes();
     fetchActs();
+    fetchFacturedActs();
   }, []);
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get('/api/patients?service=maternite');
+      const res = await axios.get('/api/patients?service=actes_maternite');
       setPatients(res.data.patients || []);
     } catch (e) {
       setPatients([]);
@@ -47,12 +71,29 @@ const ActsListMaternite: React.FC = () => {
   const fetchActs = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/acts/completed');
-      // On ne garde que les actes des patients maternité
-      const hospRes = await axios.get('/api/hospitalizations');
-      const hospMaternite = hospRes.data.hospitalizations.filter((h: any) => h.patient && h.patient.folderNumber && h.patient.folderNumber.startsWith('MAT-'));
-      const hospPatientIds = hospMaternite.map((h: any) => h.patientId);
-      setActs((res.data.acts || []).filter((a: any) => hospPatientIds.includes(a.patient.id)));
+      // Récupérer les actes programmés ET récemment réalisés (comme l'interface caissier)
+      const [scheduledRes, realizedRes] = await Promise.all([
+        axios.get('/api/acts/scheduled'),
+        axios.get('/api/acts/realized')
+      ]);
+      
+      const scheduledActs = scheduledRes.data.acts || [];
+      
+      // Filtrer les actes réalisés récemment (dans les 10 dernières minutes)
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+      const recentlyRealizedActs = (realizedRes.data.acts || [])
+        .filter((act: any) => new Date(act.updatedAt || act.date) > tenMinutesAgo);
+      
+      // Combiner les actes programmés et récemment réalisés
+      const allActs = [...scheduledActs, ...recentlyRealizedActs];
+      
+      // Filtrer pour ne garder que les actes des patients maternité
+      const matRes = await axios.get('/api/hospitalizations');
+      const matHosp = matRes.data.hospitalizations.filter((h: any) => h.patient && h.patient.folderNumber && h.patient.folderNumber.startsWith('MAT-'));
+      const matPatientIds = matHosp.map((h: any) => h.patientId);
+      
+      const filteredActs = allActs.filter((a: any) => matPatientIds.includes(a.patient.id));
+      setActs(filteredActs);
     } catch (e) {
       setActs([]);
     } finally {
@@ -60,8 +101,24 @@ const ActsListMaternite: React.FC = () => {
     }
   };
 
+  const fetchFacturedActs = async () => {
+    try {
+      const res = await axios.get('/api/invoices');
+      const actsIds: number[] = [];
+      for (const invoice of res.data.invoices || []) {
+        for (const item of invoice.items || []) {
+          if (item.type === 'act' && item.actId) {
+            actsIds.push(Number(item.actId));
+          }
+        }
+      }
+      setFacturedActs(actsIds);
+    } catch (e) {
+      setFacturedActs([]);
+    }
+  };
+
   const handleOpenForm = () => {
-    setForm({ patientId: '', actTypeId: '', date: new Date().toISOString().slice(0, 10) });
     setShowForm(true);
     setError(null);
     setSuccess(null);
@@ -69,33 +126,56 @@ const ActsListMaternite: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    
+    if (name === 'actTypeId' && value) {
+      // Récupérer automatiquement le prix du type d'acte sélectionné (comme l'interface caissier)
+      const selectedActType = actTypes.find(type => type.id === parseInt(value));
+      if (selectedActType) {
+        setForm({ 
+          ...form, 
+          [name]: value,
+          amount: selectedActType.price.toString()
+        });
+      } else {
+        setForm({ ...form, [name]: value });
+      }
+    } else {
+      setForm({ ...form, [name]: value });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setSuccess(null);
     try {
-      await axios.post('/api/acts', {
-        patientId: form.patientId,
-        actTypeId: form.actTypeId,
-        date: form.date,
-      });
-      setSuccess('Acte enregistré avec succès !');
+      await axios.post('/api/acts', form);
+      setSuccess('Acte enregistré avec succès');
+      setForm({ patientId: '', actTypeId: '', date: new Date().toISOString().slice(0, 10), amount: '' });
       setShowForm(false);
       fetchActs();
+      fetchFacturedActs();
     } catch (e: any) {
-      setError(e.response?.data?.error || 'Erreur lors de l\'enregistrement de l\'acte');
+      setError(e.response?.data?.error || 'Erreur lors de l\'enregistrement');
     } finally {
       setLoading(false);
     }
   };
 
-
-
-
+  const handlePrintList = () => {
+    const doc = new jsPDF();
+    doc.text('Liste des actes programmés - Maternité', 20, 20);
+    let y = 40;
+    acts.forEach((act, index) => {
+      if (y > 250) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(`${index + 1}. ${act.patient?.firstName || ''} ${act.patient?.lastName || ''} - ${act.actType?.name || 'Type non défini'}`, 20, y);
+      y += 10;
+    });
+    doc.save('liste-actes-maternite.pdf');
+  };
 
   const filteredActs = acts.filter(act => {
     const searchLower = search.toLowerCase();
@@ -104,14 +184,14 @@ const ActsListMaternite: React.FC = () => {
     
     return (
       (search === '' || 
-       act.patient.firstName?.toLowerCase().includes(searchLower) ||
-       act.patient.lastName?.toLowerCase().includes(searchLower) ||
-       act.actType.name.toLowerCase().includes(searchLower)) &&
+       act.patient?.firstName?.toLowerCase().includes(searchLower) ||
+       act.patient?.lastName?.toLowerCase().includes(searchLower) ||
+       act.actType?.name?.toLowerCase().includes(searchLower)) &&
       (patientSearch === '' ||
-       act.patient.firstName?.toLowerCase().includes(patientSearchLower) ||
-       act.patient.lastName?.toLowerCase().includes(patientSearchLower)) &&
+       act.patient?.firstName?.toLowerCase().includes(patientSearchLower) ||
+       act.patient?.lastName?.toLowerCase().includes(patientSearchLower)) &&
       (actTypeSearch === '' ||
-       act.actType.name.toLowerCase().includes(actTypeSearchLower))
+       act.actType?.name?.toLowerCase().includes(actTypeSearchLower))
     );
   });
 
@@ -119,12 +199,20 @@ const ActsListMaternite: React.FC = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Gestion des actes - Maternité</h1>
-        <button
-          onClick={handleOpenForm}
-          className="btn-primary"
-        >
-          Nouvel acte
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handlePrintList}
+            className="btn-secondary"
+          >
+            Imprimer la liste
+          </button>
+          <button
+            onClick={handleOpenForm}
+            className="btn-primary"
+          >
+            Nouvel acte
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -205,6 +293,16 @@ const ActsListMaternite: React.FC = () => {
               required
               className="input-field"
             />
+            <input
+              type="number"
+              name="amount"
+              value={form.amount}
+              onChange={handleChange}
+              placeholder="Prix"
+              required
+              readOnly
+              className="input-field bg-gray-100"
+            />
             <div className="md:col-span-3 flex gap-2">
               <button type="submit" className="btn-primary" disabled={loading}>
                 {loading ? 'Enregistrement...' : 'Enregistrer'}
@@ -228,7 +326,7 @@ const ActsListMaternite: React.FC = () => {
             <tr>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-xs font-medium text-gray-500 uppercase">Date</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Prix</th>
             </tr>
           </thead>
@@ -236,18 +334,16 @@ const ActsListMaternite: React.FC = () => {
             {filteredActs.map(act => (
               <tr key={act.id}>
                 <td className="px-4 py-2 font-mono text-sm">
-                  {act.patient.folderNumber} - {act.patient.lastName?.toUpperCase() || ''} {act.patient.firstName || ''}
+                  {act.patient?.folderNumber} - {act.patient?.lastName?.toUpperCase() || ''} {act.patient?.firstName || ''}
                 </td>
-                <td className="px-4 py-2">{act.actType.name}</td>
+                <td className="px-4 py-2">{act.actType?.name || 'Type non défini'}</td>
                 <td className="px-4 py-2">{new Date(act.date).toLocaleDateString('fr-FR')}</td>
-                <td className="px-4 py-2">${act.price}</td>
+                <td className="px-4 py-2">${act.price || 0}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-
-
     </div>
   );
 };

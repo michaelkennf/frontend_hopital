@@ -52,7 +52,7 @@ const ConsultationsListMaternite: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get('/api/patients?service=maternite');
+      const res = await axios.get('/api/patients?service=consultations_maternite');
       setPatients(res.data.patients || []);
     } catch (e) {
       setPatients([]);
@@ -69,14 +69,11 @@ const ConsultationsListMaternite: React.FC = () => {
   };
 
   const fetchConsultations = async () => {
-    setLoading(true);
     try {
-      const res = await axios.get('/api/consultations');
+      const res = await axios.get('/api/consultations/maternite');
       setConsultations(res.data.consultations || []);
-    } catch (e) {
-      setConsultations([]);
-    } finally {
-      setLoading(false);
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'Erreur lors du chargement des consultations');
     }
   };
 
@@ -108,7 +105,9 @@ const ConsultationsListMaternite: React.FC = () => {
         date: form.date,
       });
 
-      setConsultations([res.data, ...consultations]);
+      // Refetch les consultations pour avoir les données complètes
+      await fetchConsultations();
+      
       setShowForm(false);
       setForm({
         patientId: '',
@@ -151,9 +150,9 @@ const ConsultationsListMaternite: React.FC = () => {
         date: editForm.date,
       });
 
-      setConsultations(consultations.map(c => 
-        c.id === editingConsultation.id ? res.data : c
-      ));
+      // Refetch les consultations pour avoir les données complètes
+      await fetchConsultations();
+      
       setEditingConsultation(null);
       setEditForm({
         patientId: '',
@@ -225,6 +224,12 @@ const ConsultationsListMaternite: React.FC = () => {
 
   // Remplacer le tableau par un filtrage sur la recherche
   const filteredConsultations = consultations.filter(c => {
+    // Vérifier que la consultation a des données patient valides
+    if (!c.patient || !c.patient.folderNumber) {
+      console.warn(`⚠️ Consultation ${c.id} sans données patient valides:`, c);
+      return false; // Exclure les consultations invalides
+    }
+    
     const patient = c.patient;
     const searchText = `${patient.folderNumber} ${patient.lastName || ''} ${patient.firstName || ''}`.toLowerCase();
     return searchText.includes(search.toLowerCase());
@@ -253,7 +258,31 @@ const ConsultationsListMaternite: React.FC = () => {
       />
       <p className="text-gray-600 mb-6">Consultez la liste des consultations pour les patientes maternité.</p>
       {error && <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">{error}</div>}
-      {success && <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4 text-green-700">{success}</div>}
+      {success && <div className="bg-green-50 border border-green-400 text-green-700 rounded-md p-4 mb-4">{success}</div>}
+      
+      {/* Composant de débogage pour les consultations invalides */}
+      {consultations.length > 0 && consultations.some(c => !c.patient || !c.consultationType) && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4 text-yellow-700">
+          <h3 className="font-semibold mb-2">⚠️ Consultations avec données manquantes détectées</h3>
+          <p className="text-sm">
+            Certaines consultations ont des données patient ou type de consultation manquantes. 
+            Elles ont été exclues de l'affichage pour éviter les erreurs.
+          </p>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
+            <div className="mt-2 text-xs">
+              {consultations.filter(c => !c.patient || !c.consultationType).map((c, index) => (
+                <div key={index} className="mb-1 p-2 bg-yellow-100 rounded">
+                  Consultation ID: {c.id} - 
+                  Patient: {c.patient ? `${c.patient.folderNumber || 'N/A'} (${c.patient.firstName || 'N/A'} ${c.patient.lastName || 'N/A'})` : 'Manquant'} - 
+                  Type: {c.consultationType ? c.consultationType.name : 'Manquant'}
+                </div>
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
+      
       <div className="card mb-6" ref={tableRef}>
         {loading ? (
           <div className="flex items-center justify-center h-24">Chargement...</div>
@@ -272,6 +301,12 @@ const ConsultationsListMaternite: React.FC = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredConsultations.map((c) => {
+                  // Vérification de sécurité supplémentaire
+                  if (!c.patient || !c.consultationType) {
+                    console.warn(`⚠️ Consultation ${c.id} avec données manquantes:`, c);
+                    return null; // Ne pas afficher cette consultation
+                  }
+                  
                   return (
                     <tr key={c.id}>
                       <td className="px-4 py-2 font-mono text-sm">

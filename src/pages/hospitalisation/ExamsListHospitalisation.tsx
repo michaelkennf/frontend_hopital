@@ -48,13 +48,50 @@ const ExamsListHospitalisation: React.FC = () => {
   const fetchExams = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/exams/realized');
-      // On ne garde que les examens des patients hospitalisation
-      const hospRes = await axios.get('/api/hospitalizations');
-      const hospHosp = hospRes.data.hospitalizations.filter((h: any) => h.roomType && h.roomType.name && h.roomType.name.toLowerCase().includes('hospitalisation'));
-      const hospPatientIds = hospHosp.map((h: any) => h.patientId);
-      setExams((res.data.exams || []).filter((e: any) => hospPatientIds.includes(e.patient.id)));
+      // Utiliser la nouvelle route spécifique à l'hospitalisation
+      const res = await axios.get('/api/exams/hospitalisation');
+      const examsData = res.data.exams || [];
+      
+      console.log('🔍 Données reçues de l\'API examens:', res.data);
+      console.log('📊 Examens reçus:', examsData);
+      
+      // Vérifier et nettoyer les données reçues
+      const validExams = examsData.filter((e: any) => {
+        if (!e.patient) {
+          console.warn('Examen sans patient détecté:', e);
+          return false;
+        }
+        if (!e.patient.folderNumber) {
+          console.warn('Examen avec patient sans folderNumber:', e);
+          return false;
+        }
+        if (!e.examType) {
+          console.warn('Examen sans type détecté:', e);
+          return false;
+        }
+        if (!e.examType.name) {
+          console.warn('Examen avec type sans nom:', e);
+          return false;
+        }
+        return true;
+      });
+      
+      console.log('Examens valides récupérés:', validExams.length, 'sur', examsData.length);
+      
+      // Log détaillé de chaque examen valide
+      validExams.forEach((exam: any, index: number) => {
+        console.log(`📋 Examen ${index + 1}:`, {
+          id: exam.id,
+          patient: exam.patient,
+          examType: exam.examType,
+          date: exam.date,
+          status: exam.status
+        });
+      });
+      
+      setExams(validExams);
     } catch (e) {
+      console.error('Erreur lors de la récupération des examens:', e);
       setExams([]);
     } finally {
       setLoading(false);
@@ -78,17 +115,58 @@ const ExamsListHospitalisation: React.FC = () => {
     setLoading(true);
     setError(null);
     setSuccess(null);
+    
     try {
-      await axios.post('/api/exams', {
+      // Validation des données avant envoi
+      if (!form.patientId || !form.examTypeId || !form.date) {
+        setError('Tous les champs sont requis');
+        setLoading(false);
+        return;
+      }
+
+      const res = await axios.post('/api/exams', {
         patientId: form.patientId,
         examTypeId: form.examTypeId,
         date: form.date,
       });
-      setSuccess('Examen enregistré avec succès !');
-      setShowForm(false);
-      fetchExams();
+
+      console.log('✅ Examen créé avec succès:', res.data);
+
+      // Vérifier que la réponse contient un examen valide
+      if (res.data && res.data.patientExam) {
+        const newExam = res.data.patientExam;
+        
+        // Vérifier que l'examen a un patient et un type valides
+        if (newExam.patient && newExam.patient.folderNumber && newExam.exam && newExam.exam.name) {
+          // Ajouter le nouvel examen à la liste existante
+          const examToAdd = {
+            id: newExam.id,
+            patient: newExam.patient,
+            examType: newExam.exam,
+            date: newExam.date,
+            status: newExam.status,
+            results: newExam.results
+          };
+          
+          setExams([examToAdd, ...exams]);
+          setShowForm(false);
+          setForm({
+            patientId: '',
+            examTypeId: '',
+            date: new Date().toISOString().slice(0, 10),
+          });
+          setSuccess('Examen enregistré avec succès !');
+        } else {
+          console.error('Examen créé mais données invalides:', newExam);
+          setError('Examen créé mais données incomplètes');
+        }
+      } else {
+        console.error('Réponse API invalide:', res.data);
+        setError('Réponse du serveur invalide');
+      }
     } catch (e: any) {
-      setError(e.response?.data?.error || 'Erreur lors de l’enregistrement de l’examen');
+      console.error('Erreur lors de la création de l\'examen:', e);
+      setError(e.response?.data?.error || 'Erreur lors de l\'enregistrement de l\'examen');
     } finally {
       setLoading(false);
     }
@@ -154,6 +232,51 @@ const ExamsListHospitalisation: React.FC = () => {
       <p className="text-gray-600 mb-6">Consultez la liste des examens des patients hospitalisés.</p>
       {error && <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">{error}</div>}
       {success && <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4 text-green-700">{success}</div>}
+      
+      {/* Composant de débogage pour les erreurs de données */}
+      {exams.length > 0 && exams.some(e => !e.patient || !e.patient.folderNumber) && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4 text-yellow-700">
+          <h3 className="font-semibold mb-2">⚠️ Données incomplètes détectées</h3>
+          <p className="text-sm">
+            Certains examens ont des données de patient manquantes. 
+            Ces examens ne seront pas affichés dans la liste.
+          </p>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
+            <div className="mt-2 text-xs">
+              {exams.filter(e => !e.patient || !e.patient.folderNumber).map((e, index) => (
+                <div key={index} className="mb-1 p-2 bg-yellow-100 rounded">
+                  Examen ID: {e.id} - Patient: {e.patient ? `ID ${e.patient.id}` : 'undefined'} - 
+                  folderNumber: {e.patient?.folderNumber || 'undefined'}
+                </div>
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
+      
+      {/* Composant de débogage pour les types d'examens */}
+      {exams.length > 0 && exams.some(e => !e.examType || !e.examType.name) && (
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4 text-blue-700">
+          <h3 className="font-semibold mb-2">⚠️ Types d'examens manquants</h3>
+          <p className="text-sm">
+            Certains examens ont des types manquants ou invalides. 
+            Ces examens peuvent afficher "N/A" dans la colonne Examen.
+          </p>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
+            <div className="mt-2 text-xs">
+              {exams.filter(e => !e.examType || !e.examType.name).map((e, index) => (
+                <div key={index} className="mb-1 p-2 bg-blue-100 rounded">
+                  Examen ID: {e.id} - Type: {e.examType ? `ID ${e.examType.id}` : 'undefined'} - 
+                  Nom: {e.examType?.name || 'undefined'}
+                </div>
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
+      
       <div className="card mb-6" ref={tableRef}>
         {loading ? (
           <div className="flex items-center justify-center h-24">Chargement...</div>
@@ -167,7 +290,7 @@ const ExamsListHospitalisation: React.FC = () => {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Examen</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  {/* Prix masqué pour l'interface hospitalisation */}
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                 </tr>
               </thead>
@@ -177,9 +300,21 @@ const ExamsListHospitalisation: React.FC = () => {
                     <td className="px-4 py-2 font-mono text-sm">
                       {e.patient.folderNumber} - {e.patient.lastName?.toUpperCase() || ''} {e.patient.firstName || ''}
                     </td>
-                    <td className="px-4 py-2">{e.examType.name}</td>
+                    <td className="px-4 py-2 font-medium">{e.examType.name}</td>
                     <td className="px-4 py-2">{new Date(e.date).toLocaleDateString('fr-FR')}</td>
-                    {/* Prix masqué pour l'interface hospitalisation */}
+                    <td className="px-4 py-2">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        e.status === 'completed' 
+                          ? 'bg-green-100 text-green-800' 
+                          : e.status === 'scheduled' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {e.status === 'completed' ? 'Réalisé' : 
+                         e.status === 'scheduled' ? 'Programmé' : 
+                         e.status || 'Inconnu'}
+                      </span>
+                    </td>
                     <td className="px-4 py-2">
                       <button className="btn-secondary btn-xs" onClick={() => handleEdit(e)}>Modifier</button>
                     </td>

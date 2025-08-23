@@ -30,7 +30,7 @@ const MedicationsListMaternite: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get('/api/patients?service=maternite');
+      const res = await axios.get('/api/patients?service=medicaments_maternite');
       setPatients(res.data.patients || []);
     } catch (e) {
       setPatients([]);
@@ -47,20 +47,11 @@ const MedicationsListMaternite: React.FC = () => {
   };
 
   const fetchSales = async () => {
-    setLoading(true);
     try {
-      const res = await axios.get('/api/medications/sales');
-      // On ne garde que les ventes des patientes maternité
-      const hospRes = await axios.get('/api/hospitalizations');
-      const matHosp = hospRes.data.hospitalizations.filter((h: any) => 
-        h.roomType && h.roomType.name && h.roomType.name.toLowerCase().includes('maternite')
-      );
-      const matPatientIds = matHosp.map((h: any) => h.patientId);
-      setSales((res.data.sales || []).filter((s: any) => matPatientIds.includes(s.patient.id)));
-    } catch (e) {
-      setSales([]);
-    } finally {
-      setLoading(false);
+      const res = await axios.get('/api/medications/maternite');
+      setSales(res.data.sales || []);
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'Erreur lors du chargement des médicaments');
     }
   };
 

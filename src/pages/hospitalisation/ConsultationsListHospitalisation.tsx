@@ -72,8 +72,47 @@ const ConsultationsListHospitalisation: React.FC = () => {
     setLoading(true);
     try {
       const res = await axios.get('/api/consultations');
-      setConsultations(res.data.consultations || []);
+      const consultationsData = res.data.consultations || [];
+      
+      console.log('🔍 Données reçues de l\'API:', res.data);
+      console.log('📊 Consultations reçues:', consultationsData);
+      
+      // Vérifier et nettoyer les données reçues
+      const validConsultations = consultationsData.filter((c: any) => {
+        if (!c.patient) {
+          console.warn('Consultation sans patient détectée:', c);
+          return false;
+        }
+        if (!c.patient.folderNumber) {
+          console.warn('Consultation avec patient sans folderNumber:', c);
+          return false;
+        }
+        if (!c.consultationType) {
+          console.warn('Consultation sans type détectée:', c);
+          return false;
+        }
+        if (!c.consultationType.name) {
+          console.warn('Consultation avec type sans nom:', c);
+          return false;
+        }
+        return true;
+      });
+      
+      console.log('Consultations valides récupérées:', validConsultations.length, 'sur', consultationsData.length);
+      
+      // Log détaillé de chaque consultation valide
+      validConsultations.forEach((consultation: any, index: number) => {
+        console.log(`📋 Consultation ${index + 1}:`, {
+          id: consultation.id,
+          patient: consultation.patient,
+          consultationType: consultation.consultationType,
+          date: consultation.date
+        });
+      });
+      
+      setConsultations(validConsultations);
     } catch (e) {
+      console.error('Erreur lors de la récupération des consultations:', e);
       setConsultations([]);
     } finally {
       setLoading(false);
@@ -102,21 +141,43 @@ const ConsultationsListHospitalisation: React.FC = () => {
     setSuccess(null);
 
     try {
+      // Validation des données avant envoi
+      if (!form.patientId || !form.consultationTypeId || !form.date) {
+        setError('Tous les champs sont requis');
+        setLoading(false);
+        return;
+      }
+
       const res = await axios.post('/api/consultations', {
         patientId: parseInt(form.patientId),
         consultationTypeId: parseInt(form.consultationTypeId),
         date: form.date,
       });
 
-      setConsultations([res.data, ...consultations]);
-      setShowForm(false);
-      setForm({
-        patientId: '',
-        consultationTypeId: '',
-        date: '',
-      });
-      setSuccess('Consultation ajoutée avec succès');
+      // Vérifier que la réponse contient une consultation valide
+      if (res.data && res.data.consultation) {
+        const newConsultation = res.data.consultation;
+        
+        // Vérifier que la consultation a un patient valide
+        if (newConsultation.patient && newConsultation.patient.folderNumber) {
+          setConsultations([newConsultation, ...consultations]);
+          setShowForm(false);
+          setForm({
+            patientId: '',
+            consultationTypeId: '',
+            date: '',
+          });
+          setSuccess('Consultation ajoutée avec succès');
+        } else {
+          console.error('Consultation créée mais patient invalide:', newConsultation);
+          setError('Consultation créée mais données du patient incomplètes');
+        }
+      } else {
+        console.error('Réponse API invalide:', res.data);
+        setError('Réponse du serveur invalide');
+      }
     } catch (e: any) {
+      console.error('Erreur lors de la création de la consultation:', e);
       setError(e.response?.data?.error || 'Erreur lors de l\'ajout de la consultation');
     } finally {
       setLoading(false);
@@ -145,23 +206,45 @@ const ConsultationsListHospitalisation: React.FC = () => {
     setSuccess(null);
 
     try {
+      // Validation des données avant envoi
+      if (!editForm.patientId || !editForm.consultationTypeId || !editForm.date) {
+        setError('Tous les champs sont requis');
+        setLoading(false);
+        return;
+      }
+
       const res = await axios.put(`/api/consultations/${editingConsultation.id}`, {
         patientId: parseInt(editForm.patientId),
         consultationTypeId: parseInt(editForm.consultationTypeId),
         date: editForm.date,
       });
 
-      setConsultations(consultations.map(c => 
-        c.id === editingConsultation.id ? res.data : c
-      ));
-      setEditingConsultation(null);
-      setEditForm({
-        patientId: '',
-        consultationTypeId: '',
-        date: '',
-      });
-      setSuccess('Consultation modifiée avec succès');
+      // Vérifier que la réponse contient une consultation valide
+      if (res.data && res.data.consultation) {
+        const updatedConsultation = res.data.consultation;
+        
+        // Vérifier que la consultation mise à jour a un patient valide
+        if (updatedConsultation.patient && updatedConsultation.patient.folderNumber) {
+          setConsultations(consultations.map(c => 
+            c.id === editingConsultation.id ? updatedConsultation : c
+          ));
+          setEditingConsultation(null);
+          setEditForm({
+            patientId: '',
+            consultationTypeId: '',
+            date: '',
+          });
+          setSuccess('Consultation modifiée avec succès');
+        } else {
+          console.error('Consultation mise à jour mais patient invalide:', updatedConsultation);
+          setError('Consultation mise à jour mais données du patient incomplètes');
+        }
+      } else {
+        console.error('Réponse API invalide:', res.data);
+        setError('Réponse du serveur invalide');
+      }
     } catch (e: any) {
+      console.error('Erreur lors de la modification de la consultation:', e);
       setError(e.response?.data?.error || 'Erreur lors de la modification de la consultation');
     } finally {
       setLoading(false);
@@ -172,11 +255,14 @@ const ConsultationsListHospitalisation: React.FC = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const consultationsToPrint = consultations.filter(c => 
-      c.patient.folderNumber.toLowerCase().includes(search.toLowerCase()) ||
-      (c.patient.firstName || '').toLowerCase().includes(search.toLowerCase()) ||
-      (c.patient.lastName || '').toLowerCase().includes(search.toLowerCase())
-    );
+    const consultationsToPrint = consultations.filter(c => {
+      // Vérifier que le patient existe avant d'accéder à ses propriétés
+      if (!c.patient) return false;
+      
+      return c.patient.folderNumber?.toLowerCase().includes(search.toLowerCase()) ||
+             (c.patient.firstName || '').toLowerCase().includes(search.toLowerCase()) ||
+             (c.patient.lastName || '').toLowerCase().includes(search.toLowerCase());
+    });
 
     printWindow.document.write(`
       <html>
@@ -225,8 +311,14 @@ const ConsultationsListHospitalisation: React.FC = () => {
 
   // Remplacer le tableau par un filtrage sur la recherche
   const filteredConsultations = consultations.filter(c => {
+    // Vérifier que le patient existe avant d'accéder à ses propriétés
+    if (!c.patient) {
+      console.warn('Consultation sans patient:', c);
+      return false;
+    }
+    
     const patient = c.patient;
-    const searchText = `${patient.folderNumber} ${patient.lastName || ''} ${patient.firstName || ''}`.toLowerCase();
+    const searchText = `${patient.folderNumber || ''} ${patient.lastName || ''} ${patient.firstName || ''}`.toLowerCase();
     return searchText.includes(search.toLowerCase());
   });
 
@@ -254,6 +346,51 @@ const ConsultationsListHospitalisation: React.FC = () => {
       <p className="text-gray-600 mb-6">Consultez la liste des consultations pour les patients hospitalisés.</p>
       {error && <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">{error}</div>}
       {success && <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4 text-green-700">{success}</div>}
+      
+      {/* Composant de débogage pour les erreurs de données */}
+      {consultations.length > 0 && consultations.some(c => !c.patient || !c.patient.folderNumber) && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4 text-yellow-700">
+          <h3 className="font-semibold mb-2">⚠️ Données incomplètes détectées</h3>
+          <p className="text-sm">
+            Certaines consultations ont des données de patient manquantes. 
+            Ces consultations ne seront pas affichées dans la liste.
+          </p>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
+            <div className="mt-2 text-xs">
+              {consultations.filter(c => !c.patient || !c.patient.folderNumber).map((c, index) => (
+                <div key={index} className="mb-1 p-2 bg-yellow-100 rounded">
+                  Consultation ID: {c.id} - Patient: {c.patient ? `ID ${c.patient.id}` : 'undefined'} - 
+                  folderNumber: {c.patient?.folderNumber || 'undefined'}
+                </div>
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
+      
+      {/* Composant de débogage pour les types de consultation */}
+      {consultations.length > 0 && consultations.some(c => !c.consultationType || !c.consultationType.name) && (
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4 text-blue-700">
+          <h3 className="font-semibold mb-2">⚠️ Types de consultation manquants</h3>
+          <p className="text-sm">
+            Certaines consultations ont des types manquants ou invalides. 
+            Ces consultations peuvent afficher "N/A" dans la colonne Type.
+          </p>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
+            <div className="mt-2 text-xs">
+              {consultations.filter(c => !c.consultationType || !c.consultationType.name).map((c, index) => (
+                <div key={index} className="mb-1 p-2 bg-blue-100 rounded">
+                  Consultation ID: {c.id} - Type: {c.consultationType ? `ID ${c.consultationType.id}` : 'undefined'} - 
+                  Nom: {c.consultationType?.name || 'undefined'}
+                </div>
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
+      
       <div className="card mb-6" ref={tableRef}>
         {loading ? (
           <div className="flex items-center justify-center h-24">Chargement...</div>
@@ -271,12 +408,24 @@ const ConsultationsListHospitalisation: React.FC = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredConsultations.map((c) => {
+                  // Vérifier que le patient existe avant de l'afficher
+                  if (!c.patient) {
+                    console.warn('Consultation sans patient:', c);
+                    return null;
+                  }
+                  
                   return (
                     <tr key={c.id}>
                       <td className="px-4 py-2 font-mono text-sm">
-                        {c.patient.folderNumber} - {c.patient.lastName?.toUpperCase() || ''} {c.patient.firstName || ''}
+                        {c.patient.folderNumber || 'N/A'} - {c.patient.lastName?.toUpperCase() || ''} {c.patient.firstName || ''}
                       </td>
-                      <td className="px-4 py-2">{c.consultationType.name}</td>
+                      <td className="px-4 py-2">
+                        {c.consultationType ? (
+                          <span className="font-medium">{c.consultationType.name || 'Nom manquant'}</span>
+                        ) : (
+                          <span className="text-red-500 font-medium">Type manquant</span>
+                        )}
+                      </td>
                       <td className="px-4 py-2">{new Date(c.date).toLocaleDateString('fr-FR')}</td>
                     </tr>
                   );

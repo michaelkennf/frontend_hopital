@@ -25,6 +25,7 @@ const PatientsManagementMaternite: React.FC = () => {
     adresse: '',
     telephone: '',
     roomType: '',
+    entryDate: new Date().toISOString().slice(0, 10), // Date d'entrée par défaut
   });
   const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -67,7 +68,7 @@ const PatientsManagementMaternite: React.FC = () => {
 
   const handleOpenForm = () => {
     setForm({
-      nom: '', postNom: '', sexe: '', dateNaissance: '', age: '', poids: '', adresse: '', telephone: '', roomType: ''
+      nom: '', postNom: '', sexe: '', dateNaissance: '', age: '', poids: '', adresse: '', telephone: '', roomType: '', entryDate: new Date().toISOString().slice(0, 10)
     });
     setShowForm(true);
     setError(null);
@@ -107,7 +108,7 @@ const PatientsManagementMaternite: React.FC = () => {
       const hospitalizationRes = await axios.post('/api/hospitalizations', {
         patientId: patientId,
         roomTypeId: parseInt(form.roomType),
-        entryDate: new Date().toISOString().split('T')[0], // Date d'aujourd'hui
+        entryDate: form.entryDate, // Utiliser la date d'entrée saisie par l'utilisateur
       });
       
       setSuccess('Patient maternité enregistré avec succès !');
@@ -173,6 +174,7 @@ const PatientsManagementMaternite: React.FC = () => {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Adresse</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Téléphone</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type de chambre</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date d'entrée</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                 </tr>
               </thead>
@@ -189,6 +191,12 @@ const PatientsManagementMaternite: React.FC = () => {
                     <td className="px-4 py-2">{p.address}</td>
                     <td className="px-4 py-2">{p.phone}</td>
                     <td className="px-4 py-2">{p.hospitalization?.roomType?.name || 'N/A'}</td>
+                                          <td className="px-4 py-2">
+                        {p.hospitalization?.startDate ? 
+                          new Date(p.hospitalization.startDate).toLocaleDateString('fr-FR') : 
+                          'N/A'
+                        }
+                      </td>
                     <td className="px-4 py-2">
                       <button className="btn-secondary btn-xs" onClick={() => {
                         setEditForm({ ...p, sexe: p.gender, dateNaissance: p.dateOfBirth, poids: p.weight, adresse: p.address, telephone: p.phone });
@@ -271,6 +279,17 @@ const PatientsManagementMaternite: React.FC = () => {
                       Aucun type de chambre disponible. Veuillez en créer via l'interface logisticien.
                     </p>
                   )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Date d'entrée</label>
+                  <input 
+                    type="date" 
+                    name="entryDate" 
+                    value={form.entryDate} 
+                    onChange={handleChange} 
+                    required 
+                    className="input-field" 
+                  />
                 </div>
               </div>
               <div className="pt-4 flex flex-col sm:flex-row justify-end gap-2 sticky bottom-0 bg-white z-10 pb-2">

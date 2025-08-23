@@ -49,13 +49,51 @@ const MedicationsListHospitalisation: React.FC = () => {
   const fetchSales = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/medications/sales');
-      // On ne garde que les ventes des patients hospitalisation
-      const hospRes = await axios.get('/api/hospitalizations');
-      const hospHosp = hospRes.data.hospitalizations.filter((h: any) => h.roomType && h.roomType.name && h.roomType.name.toLowerCase().includes('hospitalisation'));
-      const hospPatientIds = hospHosp.map((h: any) => h.patientId);
-      setSales((res.data.sales || []).filter((s: any) => hospPatientIds.includes(s.patient.id)));
+      // Utiliser la nouvelle route spécifique à l'hospitalisation
+      const res = await axios.get('/api/medications/hospitalisation');
+      const salesData = res.data.sales || [];
+      
+      console.log('🔍 Données reçues de l\'API médicaments:', res.data);
+      console.log('📊 Ventes reçues:', salesData);
+      
+      // Vérifier et nettoyer les données reçues
+      const validSales = salesData.filter((s: any) => {
+        if (!s.medication) {
+          console.warn('Vente sans médicament détectée:', s);
+          return false;
+        }
+        if (!s.medication.name) {
+          console.warn('Vente avec médicament sans nom:', s);
+          return false;
+        }
+        if (!s.patient) {
+          console.warn('Vente sans patient détectée:', s);
+          return false;
+        }
+        if (!s.patient.folderNumber) {
+          console.warn('Vente avec patient sans folderNumber:', s);
+          return false;
+        }
+        return true;
+      });
+      
+      console.log('Ventes valides récupérées:', validSales.length, 'sur', salesData.length);
+      
+      // Log détaillé de chaque vente valide
+      validSales.forEach((sale: any, index: number) => {
+        console.log(`📋 Vente ${index + 1}:`, {
+          id: sale.id,
+          patient: sale.patient,
+          medication: sale.medication,
+          quantity: sale.quantity,
+          date: sale.date,
+          total: sale.total
+        });
+      });
+      
+      setSales(validSales);
     } catch (e) {
+      console.error('Erreur lors de la récupération des ventes:', e);
       setSales([]);
     } finally {
       setLoading(false);
@@ -79,19 +117,96 @@ const MedicationsListHospitalisation: React.FC = () => {
     setLoading(true);
     setError(null);
     setSuccess(null);
+    
     try {
-      await axios.post('/api/medications/sales', {
+      // Validation des données avant envoi
+      if (!form.patientId || !form.medicationId || !form.quantity || !form.date) {
+        setError('Tous les champs sont requis');
+        setLoading(false);
+        return;
+      }
+
+      // Validation de la quantité
+      const quantityValue = parseInt(form.quantity);
+      if (isNaN(quantityValue) || quantityValue <= 0) {
+        setError('La quantité doit être un nombre positif valide');
+        setLoading(false);
+        return;
+      }
+
+      console.log('💊 Envoi des données de vente:', {
         patientId: form.patientId,
         medicationId: form.medicationId,
-        quantity: form.quantity,
+        quantity: quantityValue,
+        date: form.date
+      });
+
+      const res = await axios.post('/api/medications/sales', {
+        patientId: form.patientId,
+        medicationId: form.medicationId,
+        quantity: quantityValue,
         date: form.date,
       });
-      setSuccess('Vente enregistrée avec succès !');
-      setShowForm(false);
-      fetchSales();
-      fetchMedications(); // Pour mettre à jour le stock
+
+      console.log('✅ Vente de médicament créée avec succès:', res.data);
+
+      // Vérifier que la réponse contient une vente valide
+      if (res.data && res.data.sale) {
+        const newSale = res.data.sale;
+        
+        // Récupérer les détails du patient et du médicament pour l'affichage
+        const selectedPatient = patients.find(p => p.id.toString() === form.patientId);
+        const selectedMedication = medications.find(m => m.id.toString() === form.medicationId);
+        
+        if (selectedPatient && selectedMedication) {
+          // Créer l'objet de vente pour l'affichage
+          const saleToAdd = {
+            id: newSale.id,
+            patient: {
+              id: selectedPatient.id,
+              folderNumber: selectedPatient.folderNumber,
+              firstName: selectedPatient.firstName,
+              lastName: selectedPatient.lastName
+            },
+            medication: {
+              id: selectedMedication.id,
+              name: selectedMedication.name,
+              sellingPrice: selectedMedication.sellingPrice,
+              unit: selectedMedication.unit
+            },
+            quantity: newSale.quantity,
+            date: newSale.date,
+            total: newSale.total,
+            unit: selectedMedication.unit
+          };
+          
+          // Ajouter la nouvelle vente à la liste existante
+          setSales([saleToAdd, ...sales]);
+          setShowForm(false);
+          setForm({
+            patientId: '',
+            medicationId: '',
+            quantity: '',
+            date: new Date().toISOString().slice(0, 10),
+          });
+          setSuccess('Vente enregistrée avec succès !');
+        } else {
+          console.error('Patient ou médicament non trouvé pour l\'affichage');
+          setError('Vente créée mais erreur d\'affichage');
+        }
+      } else {
+        console.error('Réponse API invalide:', res.data);
+        setError('Réponse du serveur invalide');
+      }
     } catch (e: any) {
-      setError(e.response?.data?.error || 'Erreur lors de l’enregistrement de la vente');
+      console.error('Erreur lors de la création de la vente:', e);
+      if (e.response?.status === 400) {
+        setError(`Erreur de validation: ${e.response.data.error || 'Données invalides'}`);
+      } else if (e.response?.status === 500) {
+        setError('Erreur serveur. Veuillez réessayer plus tard.');
+      } else {
+        setError(e.response?.data?.error || 'Erreur lors de l\'enregistrement de la vente');
+      }
     } finally {
       setLoading(false);
     }
@@ -158,8 +273,63 @@ const MedicationsListHospitalisation: React.FC = () => {
         onChange={e => setSearch(e.target.value)}
       />
       <p className="text-gray-600 mb-6">Consultez la liste des ventes de médicaments pour les patients hospitalisés.</p>
-      {error && <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">{error}</div>}
-      {success && <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4 text-green-700">{success}</div>}
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+          {success}
+        </div>
+      )}
+      
+      {/* Composant de débogage pour les erreurs de données */}
+      {sales.length > 0 && sales.some(s => !s.patient || !s.patient.folderNumber) && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4 text-yellow-700">
+          <h3 className="font-semibold mb-2">⚠️ Données incomplètes détectées</h3>
+          <p className="text-sm">
+            Certaines ventes ont des données de patient manquantes. 
+            Ces ventes ne seront pas affichées dans la liste.
+          </p>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
+            <div className="mt-2 text-xs">
+              {sales.filter(s => !s.patient || !s.patient.folderNumber).map((s, index) => (
+                <div key={index} className="mb-1 p-2 bg-yellow-100 rounded">
+                  Vente ID: {s.id} - Patient: {s.patient ? `ID ${s.patient.id}` : 'undefined'} - 
+                  folderNumber: {s.patient?.folderNumber || 'undefined'}
+                </div>
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
+      
+      {/* Composant de débogage pour les médicaments */}
+      {sales.length > 0 && sales.some(s => !s.medication || !s.medication.name) && (
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4 text-blue-700">
+          <h3 className="font-semibold mb-2">⚠️ Médicaments manquants</h3>
+          <p className="text-sm">
+            Certaines ventes ont des médicaments manquants ou invalides. 
+            Ces ventes peuvent afficher "N/A" dans la colonne Médicament.
+          </p>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
+            <div className="mt-2 text-xs">
+              {sales.filter(s => !s.medication || !s.medication.name).map((s, index) => (
+                <div key={index} className="mb-1 p-2 bg-blue-100 rounded">
+                  Vente ID: {s.id} - Médicament: {s.medication ? `ID ${s.medication.id}` : 'undefined'} - 
+                  Nom: {s.medication?.name || 'undefined'}
+                </div>
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
+      
+      {/* Filtres */}
       <div className="card mb-6" ref={tableRef}>
         {loading ? (
           <div className="flex items-center justify-center h-24">Chargement...</div>
